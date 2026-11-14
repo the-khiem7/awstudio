@@ -4,12 +4,27 @@ pack: "awsandbox"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-15"
-code_ref: "cb5bcdab9511"
+code_ref: "uncommitted"
 ---
 
 # awsandbox - source code
 
-Everything under "Planned" is design, not implemented code. "Vendor topology" describes the pinned submodule as inspected.
+Everything under "Planned" is design, not implemented code unless "Implemented in Phase 0" lists it. "Vendor topology" describes the pinned submodule as inspected.
+
+## Implemented in Phase 0
+
+Uncommitted working tree; verified items are in the Phase 0 checkpoint of `awsandbox.roadmap.md`.
+
+| Path | Role |
+|---|---|
+| `src/main.tsx`, `src/App.tsx` | React 18 entry and an empty Cloudscape `AppLayout` |
+| `src-tauri/src/lib.rs` | Tauri builder; `crate-type` is `rlib` only (ASB-D20) |
+| `src-tauri/src/emulator_tls.rs` | `sts_client`: empty trust store plus the emulator CA, static keys, endpoint override |
+| `src-tauri/tauri.conf.json` | Strict CSP, `bundle.active` false, dev server `127.0.0.1:1420` |
+| `machines/_default.toml`, `scripts/machine.ps1` | Default profile and the loader that exports `RUSTUP_TOOLCHAIN` and `PATH` |
+| `tools/vendor-drift/vendor_drift.py` | Two-commit comparison for the 11 services |
+| `tools/hygiene/hygiene.py`, `.githooks/pre-commit` | Staged-text check run through `uv` |
+| `.github/workflows/ci.yml` | Windows build of the scaffold, actions pinned by commit SHA |
 
 ## Planned architecture
 

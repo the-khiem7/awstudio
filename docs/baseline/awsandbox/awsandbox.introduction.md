@@ -4,7 +4,7 @@ pack: "awsandbox"
 document: "introduction"
 status: "active"
 updated: "2026-11-15"
-code_ref: "cb5bcdab9511"
+code_ref: "uncommitted"
 ---
 
 # awsandbox - introduction
@@ -28,10 +28,11 @@ Out of scope until after packaging: embedded mode (ASB-D5).
 
 | Item | State |
 |---|---|
-| Application code | none; planned only |
+| Application code | Phase 0 scaffold, uncommitted: empty Cloudscape AppLayout in a Tauri window, STS client with a custom-CA HTTP client that compiles; no console pages |
 | Branch | `main` |
 | Committed | `.gitmodules`, `vendor/aws-emulator`, `vendor/cloudscape-demos`, this pack |
-| Baseline pack | this pack, created before Phase 0 |
+| Not committed | the Phase 0 scaffold, machine profiles, tools, hook and CI skeleton (ASB-D16) |
+| Windows CI | written, never run |
 
 ## Vendor pins
 

@@ -4,7 +4,7 @@ pack: "awsandbox"
 document: "hallucination"
 status: "active"
 updated: "2026-11-15"
-code_ref: "cb5bcdab9511"
+code_ref: "uncommitted"
 ---
 
 # awsandbox - decisions and open questions
@@ -20,7 +20,7 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASB-D3 | Console-parity reference sources | closed | ASB-D2 |
 | ASB-D4 | Emulator runtime providers | closed | ASB-D5, ASB-D7, ASB-Q3 |
 | ASB-D5 | Embedded mode deferred | closed | ASB-D4 |
-| ASB-D6 | Per-machine build toolchain profiles | closed | ASB-D7, ASB-D15 |
+| ASB-D6 | Per-machine build toolchain profiles | closed | ASB-D7, ASB-D15, ASB-D20, ASB-Q5 |
 | ASB-D7 | Target platforms: Windows with Docker first, Linux deferred | closed | ASB-D4, ASB-D6, ASB-Q3 |
 | ASB-D8 | Service scope and generic API Console | closed | ASB-D9 |
 | ASB-D9 | Capability tiers and UI gating | closed | ASB-D8, ASB-D10, ASB-D11 |
@@ -34,6 +34,7 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASB-D17 | Security baseline for keys, CA, endpoint and subprocesses | closed | ASB-D4, ASB-D8, ASB-Q1 |
 | ASB-D18 | Pin only tags that have a matching LTS package | closed | ASB-D13, ASB-D14, ASB-Q2 |
 | ASB-D19 | Code signing and updater signing timing | closed | ASB-D7, ASB-Q4 |
+| ASB-D20 | Lesson: windows-gnu target fails with llvm-mingw, gnullvm builds | lesson | ASB-D6, ASB-D7 |
 
 ## Closed decisions
 
@@ -82,12 +83,15 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 ### ASB-D6: Per-machine build toolchain profiles
 
 - Decision (Kai, 2026-11-15): the build toolchain is chosen per machine by machine name through `machines/<name>.toml`, read by `scripts/dev.ps1` and `scripts/build.ps1`; only `machines/_default.toml` (MSVC) is committed and every other profile is gitignored.
-- Decision (Kai, 2026-11-15): a machine without MSVC Build Tools uses `x86_64-pc-windows-gnu` with a per-user llvm-mingw; `cargo-xwin` is the fallback when that target fails to build.
+Closes ASB-Q5.
+
+- Decision (Kai, 2026-11-15): a machine without MSVC Build Tools uses the `stable-x86_64-pc-windows-gnullvm` toolchain with a per-user llvm-mingw; `cargo-xwin` is the fallback when that toolchain fails to build.
 - Why: one machine cannot install MSVC Build Tools without elevation; others can use MSVC [user]. Profile files named after machines would leak host names in a public repo [user].
 - What breaks if ignored: pinning a target in `rust-toolchain.toml` or `.cargo/config.toml` forces it on every machine; committing profiles publishes host names.
 - Rejected: MSVC Build Tools on every machine - needs elevation on at least one machine [user].
 - Rejected: committing every machine profile - leaks machine information [user].
-- Note: Tauri states it "officially only supports the MSVC Windows target"; the GNU route is unverified until Phase 0 proves it [agent].
+- Rejected: the `x86_64-pc-windows-gnu` target - does not link with llvm-mingw, which ships no `libgcc` or `libgcc_eh` (ASB-D20) [user].
+- Note: Tauri states it "officially only supports the MSVC Windows target"; the `gnullvm` route built the Tauri skeleton and the SDK TLS stack in Phase 0, and a running emulator has not yet been exercised through it [agent].
 
 ### ASB-D7: Target platforms: Windows with Docker first, Linux deferred
 
@@ -228,3 +232,10 @@ Closes ASB-Q4.
 - Decision (Kai, 2026-11-15): ship unsigned builds until the packaging phase; the Tauri updater private key lives only in GitHub Actions secrets, never in the repository.
 - Why: no release exists before packaging, and a key in the repository is in history for good [user].
 - What breaks if ignored: an updater private key committed to the public repository lets anyone sign updates.
+
+### ASB-D20: Lesson: windows-gnu target fails with llvm-mingw, gnullvm builds
+
+- Believed: on a machine without MSVC Build Tools, `rustup target add x86_64-pc-windows-gnu` plus a per-user llvm-mingw is enough to build Tauri and the SDK (ASB-D6, Phase 0 task 2).
+- Why it looked reasonable: the target installs, llvm-mingw ships `x86_64-w64-mingw32-gcc`, and a build with `CARGO_BUILD_TARGET` set starts compiling.
+- What disproved it: with the MSVC host toolchain, build scripts and proc macros still link for the host and fail with `link.exe` not found; with the GNU host toolchain the link fails with `unable to find library -lgcc_eh` and `-lgcc`, which llvm-mingw does not ship (it uses compiler-rt and libunwind); a `cdylib` crate type then failed with `too many exported symbols (got 90650, max 65535)`.
+- Fix: `x86_64-pc-windows-gnullvm` as the host toolchain (`stable-x86_64-pc-windows-gnullvm`, exported as `RUSTUP_TOOLCHAIN` from the machine file) with llvm-mingw `bin` on `PATH`; `crate-type = ["rlib"]` because the desktop app needs neither `staticlib` nor `cdylib`. The Tauri skeleton, `aws-sdk-sts` and the aws-lc-rs TLS stack then build, so neither `cargo-xwin` nor the `rustls-ring` feature was needed.
