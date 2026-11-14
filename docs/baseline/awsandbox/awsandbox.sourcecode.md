@@ -4,7 +4,7 @@ pack: "awsandbox"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-15"
-code_ref: "uncommitted"
+code_ref: "cb5bcdab9511"
 ---
 
 # awsandbox - source code
@@ -22,7 +22,7 @@ flowchart LR
   UI -- typed invoke, DTOs only --> BE
   BE --> RP[RuntimeProvider]
   RP --> DK[Docker provider via docker CLI]
-  RP --> NT[Native provider: RPM or DEB]
+  RP --> NT[Native provider: RPM or DEB in WSL]
   RP --> AT[Attach provider]
   BE --> SS[Session: keys, CA, endpoint]
   SS --> SDK[AWS SDK clients with endpoint guard]
@@ -33,7 +33,7 @@ flowchart LR
   NT --> EM
 ```
 
-- Keys and CA stay in `Session`; the WebView receives DTOs only (ASB-Q1 in `awsandbox.hallucination.md`).
+- Keys and CA stay in `Session`; the WebView receives DTOs only (ASB-D17 in `awsandbox.hallucination.md`).
 - The WebView never opens an emulator URL; downloads and presigned URLs go through the backend.
 
 ## Planned repository layout
@@ -53,7 +53,7 @@ flowchart LR
 | `tools/capability-gen/` | Builds `capability.json` from vendor |
 | `tools/vendor-drift/` | Compares two vendor commits |
 | `machines/_default.toml` | Default toolchain profile; others gitignored |
-| `scripts/` | `dev.ps1`, `build.ps1`, `dev.sh` |
+| `scripts/` | `dev.ps1`, `build.ps1` |
 | `vendor/` | `aws-emulator`, `cloudscape-demos` submodules |
 
 ## Planned capability.json shape

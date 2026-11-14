@@ -4,14 +4,14 @@ pack: "awsandbox"
 document: "introduction"
 status: "active"
 updated: "2026-11-15"
-code_ref: "uncommitted"
+code_ref: "cb5bcdab9511"
 ---
 
 # awsandbox - introduction
 
 ## Scope
 
-`awsandbox` is a Tauri v2 desktop app (Windows and Linux) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awsandbox.hallucination.md` ASB-D1 to ASB-D16.
+`awsandbox` is a Tauri v2 desktop app (Windows first, Linux deferred, ASB-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awsandbox.hallucination.md` ASB-D1 to ASB-D19.
 
 In scope:
 
@@ -101,7 +101,8 @@ SSM by console area:
 - Public repository: no machine names, company names, company accounts or internal paths in tracked files (ASB-D15).
 - Machine profiles other than `machines/_default.toml` are gitignored (ASB-D6).
 - Builds must not need elevation on a machine without MSVC Build Tools (ASB-D6).
-- Shared code works on Windows and Linux (ASB-D7).
+- Windows with the Docker provider is the only supported target for now; avoid Windows-only assumptions in shared code where cheap, but build nothing for Linux yet (ASB-D7).
+- The submodule pin is restricted to tags with an LTS package (ASB-D18); builds stay unsigned until packaging (ASB-D19).
 - The app never redistributes the emulator package or image; the image is built on the user's machine from the AWS download URL. The license of the binary package is not stated in the docs.
 - Cloudscape is Apache-2.0: ship its NOTICE in the About page.
 - The `docker` command may be a shim into a WSL2 distro; Windows host paths must be translated for bind mounts and ports reach Windows through WSL2 localhost forwarding (ASB-D4).

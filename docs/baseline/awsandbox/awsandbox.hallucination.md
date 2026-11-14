@@ -4,7 +4,7 @@ pack: "awsandbox"
 document: "hallucination"
 status: "active"
 updated: "2026-11-15"
-code_ref: "uncommitted"
+code_ref: "cb5bcdab9511"
 ---
 
 # awsandbox - decisions and open questions
@@ -21,20 +21,19 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASB-D4 | Emulator runtime providers | closed | ASB-D5, ASB-D7, ASB-Q3 |
 | ASB-D5 | Embedded mode deferred | closed | ASB-D4 |
 | ASB-D6 | Per-machine build toolchain profiles | closed | ASB-D7, ASB-D15 |
-| ASB-D7 | Target platforms | closed | ASB-D4, ASB-D6, ASB-Q3 |
+| ASB-D7 | Target platforms: Windows with Docker first, Linux deferred | closed | ASB-D4, ASB-D6, ASB-Q3 |
 | ASB-D8 | Service scope and generic API Console | closed | ASB-D9 |
 | ASB-D9 | Capability tiers and UI gating | closed | ASB-D8, ASB-D10, ASB-D11 |
 | ASB-D10 | Lambda Code tab is functional | closed | ASB-D9, ASB-D11 |
 | ASB-D11 | Lesson: branch-level not_implemented read as whole-operation gaps | lesson | ASB-D9, ASB-D10 |
 | ASB-D12 | Emulator telemetry default | closed | - |
-| ASB-D13 | Vendor pinning and drift detection | closed | ASB-D14, ASB-D16, ASB-Q2 |
-| ASB-D14 | Running-version mismatch handling | closed | ASB-D13, ASB-Q2 |
+| ASB-D13 | Vendor pinning and drift detection | closed | ASB-D14, ASB-D16, ASB-D18 |
+| ASB-D14 | Running-version mismatch handling | closed | ASB-D13, ASB-D18 |
 | ASB-D15 | Repository model and public hygiene | closed | ASB-D6, ASB-D16 |
 | ASB-D16 | Submodule commit timing and path | closed | ASB-D13, ASB-D15 |
-| ASB-Q1 | Security baseline for keys, CA, endpoint and subprocesses | open | ASB-D4, ASB-D8 |
-| ASB-Q2 | Pin only tags that have a matching LTS package | open | ASB-D13, ASB-D14 |
-| ASB-Q3 | Default runtime provider on Linux | open | ASB-D4, ASB-D7 |
-| ASB-Q4 | Code signing and updater signing timing | open | ASB-D7 |
+| ASB-D17 | Security baseline for keys, CA, endpoint and subprocesses | closed | ASB-D4, ASB-D8, ASB-Q1 |
+| ASB-D18 | Pin only tags that have a matching LTS package | closed | ASB-D13, ASB-D14, ASB-Q2 |
+| ASB-D19 | Code signing and updater signing timing | closed | ASB-D7, ASB-Q4 |
 
 ## Closed decisions
 
@@ -90,12 +89,17 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 - Rejected: committing every machine profile - leaks machine information [user].
 - Note: Tauri states it "officially only supports the MSVC Windows target"; the GNU route is unverified until Phase 0 proves it [agent].
 
-### ASB-D7: Target platforms
+### ASB-D7: Target platforms: Windows with Docker first, Linux deferred
 
-- Decision (Kai, 2026-11-15): target Windows and Linux from the start.
-- Why: owner requirement [user].
-- What breaks if ignored: Windows-only assumptions (paths, WSL shim handling, toolchain scripts in PowerShell only) leak into shared code and block the Linux build later.
-- Rejected: Windows only until packaging - owner wants Linux from the first phase [user].
+Closes ASB-Q3.
+
+- Decision (Kai, 2026-11-15): concentrate on Windows with the Docker provider; Linux support is deferred because it uses a different approach.
+- Why: the owner treats Linux (native RPM/DEB as the official path) as a separate approach to design later [user].
+- What breaks if ignored: Linux CI, a POSIX dev script, native Linux provider work and AppImage or DEB packaging are built before the Windows path works.
+- Rejected: Windows and Linux from the start - owner defers Linux entirely [user].
+- Rejected: Docker by default on both platforms - owner defers Linux entirely [user].
+- Rejected: native RPM/DEB as the Linux default now - Linux is deferred [user].
+- Note: the native provider inside WSL (ASB-D4) and the attach provider stay in scope as Windows options [agent].
 
 ### ASB-D8: Service scope and generic API Console
 
@@ -186,17 +190,17 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 ### ASB-D16: Submodule commit timing and path
 
 - Decision (Kai, 2026-11-15): keep the submodules under `vendor/` (`vendor/aws-emulator`, `vendor/cloudscape-demos`).
-- Decision (Kai, 2026-11-15): commit the submodules and the baseline pack before the Phase 0 scaffold, as separate commits; the scaffold is its own later commit. Supersedes the earlier choice to commit everything with the scaffold.
+- Decision (Kai, 2026-11-15): commit the submodules and the baseline pack before the Phase 0 scaffold, as separate commits; the scaffold is its own later commit.
 - Why: owner choice; the submodules are references for implementation, not build dependencies [user].
 - What breaks if ignored: none beyond history shape; the toolchain gate is not tied to the submodule commits.
 - Rejected: `references/` path - owner keeps `vendor/` [user].
 - Rejected: one commit holding submodules, pack and scaffold - owner chose separate commits [user].
 
-## Open questions
+### ASB-D17: Security baseline for keys, CA, endpoint and subprocesses
 
-### ASB-Q1: Security baseline for keys, CA, endpoint and subprocesses
+Closes ASB-Q1.
 
-- Question: adopt this baseline for Phase 1 to Phase 7?
+- Decision (Kai, 2026-11-15): adopt the whole baseline for Phase 1 to Phase 7.
   - Emulator access keys stay in the Rust backend and never reach the WebView; they are never logged.
   - SDK clients use an explicit credentials provider built from the emulator's per-port files, never the default credential chain, plus an endpoint guard that refuses any host other than the emulator endpoint.
   - The emulator CA is trusted only inside the app's HTTP client, never imported into the OS certificate store.
@@ -204,22 +208,23 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
   - The WebView never fetches emulator URLs (S3 downloads, presigned URLs, function URLs); the backend proxies them and streams large files from file paths instead of IPC bytes.
   - The API Console spawns the AWS CLI with an argument array (no shell), removes `AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` from its environment, and sets only the emulator variables.
   - Tauri capabilities are least-privilege with a strict CSP; the WebView gets no shell permission.
-- Recommendation: adopt all; a default credential chain can sign with a real AWS profile and send local test traffic to real AWS.
+- Why: a default credential chain can sign with a real AWS profile and send local test traffic to real AWS [user].
+- What breaks if ignored: test traffic and real credentials cross the local-to-AWS boundary; emulator keys or the CA leak into the WebView or the OS trust store.
 
-### ASB-Q2: Pin only tags that have a matching LTS package
+### ASB-D18: Pin only tags that have a matching LTS package
+
+Closes ASB-Q2.
 
 **Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
 
-- Question: should the submodule pin be restricted to tags whose package `<tag>.1` exists in the LTS `versions.json`?
-- Context: GitHub tag `v1.0.382` maps to LTS package `1.0.382.1`; the LTS stream lists 41 versions, so not every tag has a package. Pinned package URL pattern: `https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/aws-emulator-<version>-1-x86_64.rpm`.
-- Recommendation: yes; then the Docker image can be built at the pinned version and ASB-D14 mismatches only happen on user-built images.
+- Decision (Kai, 2026-11-15): pin the aws-emulator submodule only at tags whose package `<tag>.1` exists in the LTS `versions.json`.
+- Why: GitHub tag `v1.0.382` maps to LTS package `1.0.382.1`, and the LTS stream lists 41 versions, so not every tag has a package; pinned package URL pattern `https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/aws-emulator-<version>-1-x86_64.rpm`; the Docker image can then be built at the pinned version and the ASB-D14 mismatch only happens on user-built images [user].
+- What breaks if ignored: a pin with no package leaves the app unable to build an image at the pinned version, so the capability matrix and the running emulator differ.
 
-### ASB-Q3: Default runtime provider on Linux
+### ASB-D19: Code signing and updater signing timing
 
-- Question: on Linux, is the Docker provider still the default, or the native RPM/DEB provider (the official primary path on Linux)?
-- Recommendation: Docker by default on both platforms for one code path and a memory cap; native provider selectable.
+Closes ASB-Q4.
 
-### ASB-Q4: Code signing and updater signing timing
-
-- Question: when to add Windows code signing and the Tauri updater signing key?
-- Recommendation: unsigned builds until the packaging phase; the updater private key lives only in GitHub Actions secrets, never in the repository.
+- Decision (Kai, 2026-11-15): ship unsigned builds until the packaging phase; the Tauri updater private key lives only in GitHub Actions secrets, never in the repository.
+- Why: no release exists before packaging, and a key in the repository is in history for good [user].
+- What breaks if ignored: an updater private key committed to the public repository lets anyone sign updates.
