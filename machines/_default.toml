@@ -1,0 +1,5 @@
+# Default build profile: MSVC toolchain with Visual Studio Build Tools installed.
+# A machine without them adds an untracked machines/<computer name>.toml next to this file;
+# scripts/machine.ps1 picks it over this one. Values may use %ENVVAR% references.
+toolchain = "stable-x86_64-pc-windows-msvc"
+path = []

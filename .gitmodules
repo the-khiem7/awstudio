@@ -1,6 +1,8 @@
 [submodule "vendor/aws-emulator"]
 	path = vendor/aws-emulator
 	url = https://github.com/aws/aws-emulator.git
+	shallow = true
 [submodule "vendor/cloudscape-demos"]
 	path = vendor/cloudscape-demos
 	url = https://github.com/cloudscape-design/demos.git
+	shallow = true

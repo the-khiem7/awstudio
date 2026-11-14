@@ -1,0 +1,10 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+tools/vendor-drift/.cache/
+__pycache__/
+
+# Per-machine build profiles: only the default is tracked
+machines/*.toml
+!machines/_default.toml
