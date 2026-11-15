@@ -21,6 +21,7 @@ import {
   type Status,
   type VersionCheck,
 } from "./api";
+import { SdkAccess } from "./SdkAccess";
 
 const KINDS = [
   { value: "docker", label: "Docker", description: "Container built from the AWS package" },
@@ -252,6 +253,8 @@ export function Runtime() {
           </SpaceBetween>
         )}
       </Container>
+
+      <SdkAccess running={running && status?.health === "healthy"} />
 
       <Container header={<Header variant="h2">Logs</Header>}>
         <Box variant="code">
