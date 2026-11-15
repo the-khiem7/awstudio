@@ -109,10 +109,15 @@ function useTransfers() {
       if (!results.length) return false;
       const failed = results.filter((r) => r.error);
       const done = results.length - failed.length;
+      // The emulator keeps a fixed number of object bytes per bucket, uploads in progress included,
+      // and refuses a part or an object past it; its message carries the limit in bytes.
+      const limited = failed.some((f) => f.error?.includes("this emulator keeps per bucket"));
       notify({
         type: failed.length ? "error" : "success",
         header: failed.length ? `Upload failed for ${failed.length} of ${results.length} files` : `Upload succeeded`,
-        content: failed.length ? failed.map((f) => `${f.key}: ${f.error}`).join("; ") : `${done} file${done === 1 ? "" : "s"}, ${formatBytes(results.reduce((n, r) => n + (r.size ?? 0), 0))}, uploaded to s3://${bucket}/${prefix}`,
+        content: failed.length
+          ? `${failed.map((f) => `${f.key}: ${f.error}`).join("; ")}${limited ? ". AWS Emulator holds a limited amount of object data per bucket, parts of uploads in progress included: delete objects or upload into another bucket." : ""}`
+          : `${done} file${done === 1 ? "" : "s"}, ${formatBytes(results.reduce((n, r) => n + (r.size ?? 0), 0))}, uploaded to s3://${bucket}/${prefix}`,
       });
       return done > 0;
     } catch (e) {
