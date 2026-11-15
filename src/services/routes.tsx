@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { dynamoDbPage } from "./dynamodb/DynamoDbPages";
+import { iamPage } from "./iam/IamPages";
+import { lambdaPage } from "./lambda/LambdaPages";
 import { s3Page } from "./s3/S3Pages";
 import { snsPage } from "./sns/SnsPages";
 import { sqsPage } from "./sqs/SqsPages";
@@ -10,6 +12,8 @@ const PAGES: Record<string, (path: string, query: URLSearchParams) => ReactNode 
   dynamodb: dynamoDbPage,
   sqs: (path) => sqsPage(path),
   sns: snsPage,
+  iam: (path) => iamPage(path),
+  lambda: (path) => lambdaPage(path),
 };
 
 export function hasServicePages(serviceId: string): boolean {
