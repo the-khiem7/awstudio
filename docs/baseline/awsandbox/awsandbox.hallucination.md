@@ -38,7 +38,7 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASB-D21 | Lesson: gnupg2-minimal cannot verify the package signature in the image build | lesson | ASB-D4, ASB-D18 |
 | ASB-D22 | External agent skills tauri-v2 and modern-web-guidance not adopted | closed | ASB-D2, ASB-D17, ASB-D20 |
 | ASB-D23 | Lesson: test binaries linking the Tauri runtime fail to load on Windows | lesson | ASB-D20 |
-| ASB-Q6 | Default container memory limit | open | ASB-D4 |
+| ASB-D24 | Default container memory limit stays at the upstream 2g | closed | ASB-D4, ASB-Q6 |
 | ASB-Q7 | Native provider install source: no DEB package URL known | open | ASB-D4, ASB-D7 |
 
 ## Closed decisions
@@ -268,14 +268,18 @@ Closes ASB-Q4.
 - What disproved it: `cargo test --lib` exited `-1073741511` (`STATUS_ENTRYPOINT_NOT_FOUND`) before any test ran. The registry pulls in the wry and tao window code, the test exe imports `comctl32.dll` and carries no resources; `TaskDialogIndirect` exists only in Common Controls v6, which needs the manifest that tauri-build links into binaries only (`cargo:rustc-link-arg-bins=...libresource.a`). Emitting `cargo:rustc-link-arg-tests` for the same resource did not reach the library's unit-test exe.
 - Fix: `build.rs` emits `cargo:rustc-link-arg-tests` for `libresource.a` (GNU family) or `resource.lib` (MSVC), which integration tests receive, and the bindings export runs in the integration test `tests/bindings.rs`. Library unit tests stay free of the registry. [agent]
 
+### ASB-D24: Default container memory limit stays at the upstream 2g
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+Closes ASB-Q6.
+
+- Decision (Kai, 2026-11-15): the Docker provider's default `--memory` stays `2g`, the value of the upstream Docker guide; the user can change it in the Provider settings.
+- Why: keep upstream behavior [user]; idle use measured about 180 MiB (`docker stats`, 3 samples, version 1.0.382, `--telemetry off`), so `2g` is about 11 times idle [agent].
+- What breaks if ignored: a container over its limit exits 137 and every emulated resource is lost.
+- Rejected: `1g` (about 5.5 times idle, smaller footprint) - not measured under load, and the owner keeps the upstream value [user].
+
 ## Open questions
-
-### ASB-Q6: Default container memory limit
-
-- Question: which default `--memory` and `--memory-swap` does the Docker provider use?
-- Measured: idle emulator with every service registered uses about 180 MiB (`docker stats`, 3 samples, version 1.0.382, `--telemetry off`); the upstream Docker guide uses `2g`.
-- Options: `2g` (about 11 times idle, upstream value, fewer exit-137 losses under load) or `1g` (about 5.5 times idle, smaller footprint, unmeasured under load).
-- Recommendation: keep `2g` until a loaded run is measured, because exit code 137 deletes all emulated resources. The code uses `2g` now. [agent]
 
 ### ASB-Q7: Native provider install source: no DEB package URL known
 

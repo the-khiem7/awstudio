@@ -11,7 +11,7 @@ code_ref: "e69d991"
 
 ## Scope
 
-`awsandbox` is a Tauri v2 desktop app (Windows first, Linux deferred, ASB-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awsandbox.hallucination.md` ASB-D1 to ASB-D23.
+`awsandbox` is a Tauri v2 desktop app (Windows first, Linux deferred, ASB-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awsandbox.hallucination.md` ASB-D1 to ASB-D24.
 
 In scope:
 
