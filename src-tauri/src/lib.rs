@@ -39,6 +39,7 @@ pub fn bindings() -> Builder<tauri::Wry> {
         s3::s3_put_bucket_policy,
         s3::s3_get_bucket_cors,
         s3::s3_put_bucket_cors,
+        s3::s3_get_bucket_encryption,
         s3::s3_get_public_access_block,
         s3::s3_put_public_access_block,
         s3::s3_get_bucket_lifecycle,

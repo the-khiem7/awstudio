@@ -433,6 +433,35 @@ pub async fn s3_put_bucket_cors(state: State<'_, AppState>, region: String, buck
     Ok(())
 }
 
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct BucketEncryption {
+    /// `AES256` (SSE-S3), `aws:kms` or `aws:kms:dsse`.
+    pub algorithm: String,
+    pub kms_key_id: Option<String>,
+    pub bucket_key: bool,
+}
+
+/// The bucket's default encryption rule, or none when the bucket has no configuration.
+#[tauri::command]
+#[specta::specta]
+pub async fn s3_get_bucket_encryption(state: State<'_, AppState>, region: String, bucket: String) -> Result<Option<BucketEncryption>, ApiError> {
+    let client = s3(&clients(&state).await?, &region)?;
+    match client.get_bucket_encryption().bucket(bucket).send().await {
+        Ok(r) => Ok(r.server_side_encryption_configuration().and_then(|c| c.rules().first()).map(|rule| {
+            let d = rule.apply_server_side_encryption_by_default();
+            BucketEncryption {
+                algorithm: d.map(|d| d.sse_algorithm().as_str().to_string()).unwrap_or_default(),
+                kms_key_id: d.and_then(|d| d.kms_master_key_id()).map(str::to_string),
+                bucket_key: rule.bucket_key_enabled().unwrap_or(false),
+            }
+        })),
+        Err(e) => {
+            let e = map_sdk_error("s3:GetBucketEncryption", e);
+            if is_code(&e, &["ServerSideEncryptionConfigurationNotFoundError"]) { Ok(None) } else { Err(e) }
+        }
+    }
+}
+
 /// Block Public Access settings; a bucket without the configuration has every setting off.
 #[tauri::command]
 #[specta::specta]

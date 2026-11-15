@@ -59,6 +59,8 @@ export const commands = {
 	s3GetBucketCors: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<string | null>("s3_get_bucket_cors", { region, bucket }, options),
 	/**  Writes the CORS rules from the editor's JSON array; an empty text deletes them. */
 	s3PutBucketCors: (region: string, bucket: string, rules: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_put_bucket_cors", { region, bucket, rules }, options),
+	/**  The bucket's default encryption rule, or none when the bucket has no configuration. */
+	s3GetBucketEncryption: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<BucketEncryption_Serialize | null>("s3_get_bucket_encryption", { region, bucket }, options),
 	/**  Block Public Access settings; a bucket without the configuration has every setting off. */
 	s3GetPublicAccessBlock: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<PublicAccessBlock>("s3_get_public_access_block", { region, bucket }, options),
 	s3PutPublicAccessBlock: (region: string, bucket: string, settings: PublicAccessBlock, options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_put_public_access_block", { region, bucket, settings }, options),
@@ -193,6 +195,22 @@ export type ApiError_Serialize =
 { kind: "transport"; op: string; detail: string } | 
 /**  The command's input was rejected before any request was built, or a local file failed. */
 { kind: "invalid"; detail: string };
+
+export type BucketEncryption = BucketEncryption_Serialize | BucketEncryption_Deserialize;
+
+export type BucketEncryption_Deserialize = {
+	/**  `AES256` (SSE-S3), `aws:kms` or `aws:kms:dsse`. */
+	algorithm: string,
+	kms_key_id?: string | null,
+	bucket_key: boolean,
+};
+
+export type BucketEncryption_Serialize = {
+	/**  `AES256` (SSE-S3), `aws:kms` or `aws:kms:dsse`. */
+	algorithm: string,
+	kms_key_id: string | null,
+	bucket_key: boolean,
+};
 
 export type CreateBucketInput = {
 	name: string,

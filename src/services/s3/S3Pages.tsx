@@ -29,8 +29,8 @@ import {
   GatedButton,
   ResourceTable,
   textProperty,
+  ScopeBanner,
   UiOnlyScope,
-  UnsupportedBanner,
   useUiOnly,
   type ResourceTableColumn,
 } from "../../patterns";
@@ -580,7 +580,7 @@ function PropertiesTab({ bucket }: { bucket: string }) {
       <TagsTable tags={tags.data} loading={tags.loading} op="s3:PutBucketTagging" onEdit={() => setEditTags(true)} description="You can use bucket tags to track storage costs and organize buckets." />
       <UiOnlyScope primaryOp="s3:GetBucketEncryption">
         <Container header={<Header variant="h2" description="Server-side encryption is automatically applied to new objects stored in this bucket.">Default encryption</Header>}>
-          <DefaultEncryption />
+          <DefaultEncryption bucket={bucket} />
         </Container>
       </UiOnlyScope>
       <FormModal
@@ -620,9 +620,28 @@ function PropertiesTab({ bucket }: { bucket: string }) {
   );
 }
 
-function DefaultEncryption() {
+function DefaultEncryption({ bucket }: { bucket: string }) {
+  const region = useRegion();
+  const enc = useLoad(() => commands.s3GetBucketEncryption(region, bucket), [bucket]);
   const { uiOnly } = useUiOnly();
-  return uiOnly ? <UnsupportedBanner /> : <Box>Server-side encryption with Amazon S3 managed keys (SSE-S3)</Box>;
+  const algorithm = enc.data?.algorithm;
+  const type = algorithm === "AES256" ? "Server-side encryption with Amazon S3 managed keys (SSE-S3)" : algorithm === "aws:kms" ? "Server-side encryption with AWS Key Management Service keys (SSE-KMS)" : algorithm === "aws:kms:dsse" ? "Dual-layer server-side encryption with AWS KMS keys (DSSE-KMS)" : (algorithm ?? "-");
+  return (
+    <SpaceBetween size="m">
+      <ScopeBanner />
+      <LoadError error={enc.error} />
+      {!uiOnly && (
+        <KeyValuePairs
+          columns={3}
+          items={[
+            { label: "Encryption type", value: enc.loading ? "-" : enc.data ? type : "No default encryption configured" },
+            { label: "Bucket Key", value: enc.data ? (enc.data.bucket_key ? "Enabled" : "Disabled") : "-" },
+            { label: "AWS KMS key", value: enc.data?.kms_key_id ?? "-" },
+          ]}
+        />
+      )}
+    </SpaceBetween>
+  );
 }
 
 // Bucket details: Permissions -------------------------------------------------------------------
