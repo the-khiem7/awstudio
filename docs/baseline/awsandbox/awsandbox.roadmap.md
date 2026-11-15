@@ -215,4 +215,4 @@ Deferred by ASB-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 
 ## Next action
 
-Phase 1 and Phase 2 are approved and complete. ASB-Q7 waits for the user. Push so CI builds the Phase 2 code (not yet authorized), then start Phase 3 task 1 (`tools/capability-gen` writing `capability.json` from the pinned vendor data).
+Phase 1 and Phase 2 are approved and complete. ASB-Q7 is deferred by the user; later phases target the Docker provider. Push so CI builds the Phase 2 code (not yet authorized), then start Phase 3 task 1 (`tools/capability-gen` writing `capability.json` from the pinned vendor data).

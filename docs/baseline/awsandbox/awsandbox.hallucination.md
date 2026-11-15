@@ -39,7 +39,7 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASB-D22 | External agent skills tauri-v2 and modern-web-guidance not adopted | closed | ASB-D2, ASB-D17, ASB-D20 |
 | ASB-D23 | Lesson: test binaries linking the Tauri runtime fail to load on Windows | lesson | ASB-D20 |
 | ASB-D24 | Default container memory limit stays at the upstream 2g | closed | ASB-D4, ASB-Q6 |
-| ASB-Q7 | Native provider install source: no DEB package URL known | open | ASB-D4, ASB-D7 |
+| ASB-Q7 | Native provider install source: no DEB package URL known | open, deferred | ASB-D4, ASB-D7 |
 
 ## Closed decisions
 
@@ -287,3 +287,4 @@ Closes ASB-Q6.
 - Found: `downloads.aws.com/.../LTS/` serves `aws-emulator-<version>-1-x86_64.rpm` and `.sig`; guessed DEB names (`-amd64.deb`, `_amd64.deb`) return 403, so no DEB URL is known. The provider takes the executable path from settings (`wsl_binary`) and was verified with the emulator binary copied out of the Docker image into `~/awsb-bin` in Ubuntu 24.04, not with an installed package.
 - Options: document an RPM extraction (`rpm2cpio`) into a user directory, find the real DEB URL on the AWS Linux guide, or keep the setting and leave installation to the user.
 - Recommendation: keep the setting and leave installation to the user until the AWS Linux guide shows a DEB URL. [agent]
+- Deferred (Kai, 2026-11-15): not answered now; work concentrates on the Docker provider, and the native provider stays as built, reading `wsl_binary` from settings [user].
