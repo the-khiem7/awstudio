@@ -6,7 +6,7 @@ import Button from "@cloudscape-design/components/button";
 import Modal from "@cloudscape-design/components/modal";
 import SpaceBetween from "@cloudscape-design/components/space-between";
 import { useEffect, useRef, useState } from "react";
-import { navigate } from "../shell/router";
+import { navigate, setNavigationGuard } from "../shell/router";
 
 /**
  * Guards a form with unsaved changes: closing the window asks through the WebView, and leaving the
@@ -28,23 +28,20 @@ export function useUnsavedChanges(dirty: boolean) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, []);
 
-  // A link elsewhere on the page changes the hash: put the route back and ask first. The listener
-  // runs in the capture phase and stops the event, so the router never renders the other route.
+  // A link elsewhere on the page changes the hash: the router holds the change through its guard,
+  // restores the route and this hook asks first.
   useEffect(() => {
     const here = window.location.hash;
-    const onHashChange = (e: HashChangeEvent) => {
-      const target = new URL(e.newURL).hash;
-      if (!dirtyRef.current || target === here || allowed.current === target) return;
-      e.stopImmediatePropagation();
-      history.replaceState(null, "", here);
+    return setNavigationGuard((target) => {
+      if (!dirtyRef.current || target === here || allowed.current === target) return false;
       setPending(target);
-    };
-    window.addEventListener("hashchange", onHashChange, { capture: true });
-    return () => window.removeEventListener("hashchange", onHashChange, { capture: true });
+      return true;
+    });
   }, []);
 
   const go = (target: string) => {
-    allowed.current = target;
+    const hash = target.startsWith("#") ? target : `#${target}`;
+    allowed.current = hash;
     navigate(target);
   };
 

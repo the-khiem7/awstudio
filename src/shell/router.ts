@@ -34,6 +34,34 @@ export function href(path: string, query?: Record<string, string | undefined>): 
   return `#${path}${qs ? `?${qs}` : ""}`;
 }
 
+/** Returns true to hold a navigation to `target` (a `#/path` hash) on the current route. */
+type NavigationGuard = (target: string) => boolean;
+
+let guard: NavigationGuard | null = null;
+
+/** Installs the one navigation guard; returns its remover. A newer guard replaces an older one. */
+export function setNavigationGuard(next: NavigationGuard): () => void {
+  guard = next;
+  return () => {
+    if (guard === next) guard = null;
+  };
+}
+
+// Registered when this module loads, so it runs before every component's own `hashchange` listener
+// (listeners on one target fire in registration order). A held navigation restores the previous hash
+// and stops the event, so `useLocation` never sees the change.
+window.addEventListener(
+  "hashchange",
+  (e) => {
+    if (!guard) return;
+    const target = new URL(e.newURL).hash;
+    if (!guard(target)) return;
+    e.stopImmediatePropagation();
+    history.replaceState(null, "", new URL(e.oldURL).hash || "#/");
+  },
+  { capture: true },
+);
+
 export function navigate(target: string): void {
   window.location.hash = target.startsWith("#") ? target.slice(1) : target;
 }
