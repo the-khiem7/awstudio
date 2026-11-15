@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "hallucination"
 status: "active"
 updated: "2026-11-15"
-code_ref: "8ce1a04"
+code_ref: "81673f4"
 ---
 
 # awstudio - decisions and open questions
@@ -43,7 +43,11 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASD-D26 | Capability matrix service key is the SDK id slug | closed | ASD-D9, ASD-D13, ASD-Q8 |
 | ASD-D27 | Capability matrix covers every modeled service | closed | ASD-D8, ASD-D9, ASD-Q9 |
 | ASD-D28 | Phase 3 acceptance accepted on the development gallery, repeated on the Phase 4 pages | closed | ASD-D9, ASD-Q10 |
+| ASD-D29 | Lesson: the create form's submit button sent each request twice | lesson | ASD-D3, ASD-D28 |
+| ASD-D30 | Lesson: specta refuses to export serde_json::Value to the bindings | lesson | ASD-D23 |
 | ASD-Q7 | Native provider install source: no DEB package URL known | open, deferred | ASD-D4, ASD-D7 |
+| ASD-Q11 | S3 transfer acceptance size against the emulator's 64 MiB per-bucket limit | open | ASD-D18 |
+| ASD-Q12 | Whether a yellow primary read keeps a whole page UI-only | open | ASD-D9, ASD-D28 |
 
 ## Closed decisions
 
@@ -321,6 +325,20 @@ Closes ASD-Q10.
 - What breaks if ignored: without the repeat in Phase 4, the gating is proven only on fixtures and a real page could ship with a control gated wrong.
 - Rejected: build one real UI-only page now (for example SSM Maintenance Windows, red) ahead of Phase 6 - pulls Phase 6 work forward [user].
 
+### ASD-D29: Lesson: the create form's submit button sent each request twice
+
+- Believed: `CreateForm` (Phase 3 task 6) submits once: the primary `GatedButton` called `submit()` from its `onClick`, and the `<form onSubmit>` was there only so Enter in a field submits.
+- Why it looked reasonable: the gallery's `onSubmit` was a no-op, so a second call left no trace, and the Phase 3 checks (validation, Leave page modal, navigation after submit) all passed.
+- What disproved it: a Cloudscape `Button` without `formAction="none"` is a native submit button, so one click ran `onClick` and the form's submit event. Observed in Phase 4 against the running emulator: one Publish message click put two copies in a subscribed queue; the queue had one subscription.
+- Fix: the primary button has no `onClick` and the form's submit event is the only path; an in-flight ref drops a second submit; `submit` also returns early when the form's own gate is not enabled, because a gated button is only `aria-disabled` and Enter still submits. After the fix one click left exactly one message and one subscription. [agent]
+
+### ASD-D30: Lesson: specta refuses to export serde_json::Value to the bindings
+
+- Believed: DynamoDB items can cross IPC as `serde_json::Value` once specta's `serde_json` feature is on (Phase 4 backend).
+- Why it looked reasonable: the feature makes `Value` implement `specta::Type`, and `cargo build` passed.
+- What disproved it: `cargo test --test bindings` failed with "Specta forbids exporting BigInt-style types (usize, isize, i64, u64, i128, u128)", because `Value::Number` holds an `i64` that TypeScript `number` cannot hold losslessly.
+- Fix: a `Json(serde_json::Value)` newtype with `#[serde(transparent)]` whose `specta::Type` returns `specta_typescript::Unknown`, so the bindings type is `unknown`; the `serde_json` feature was removed again. DynamoDB numbers travel as strings inside DynamoDB JSON, so no precision is lost. [agent]
+
 ## Open questions
 
 ### ASD-Q7: Native provider install source: no DEB package URL known
@@ -330,3 +348,22 @@ Closes ASD-Q10.
 - Options: document an RPM extraction (`rpm2cpio`) into a user directory, find the real DEB URL on the AWS Linux guide, or keep the setting and leave installation to the user.
 - Recommendation: keep the setting and leave installation to the user until the AWS Linux guide shows a DEB URL. [agent]
 - Deferred (Kai, 2026-11-15): not answered now; work concentrates on the Docker provider, and the native provider stays as built, reading `wsl_binary` from settings [user].
+
+
+### ASD-Q11: S3 transfer acceptance size against the emulator's 64 MiB per-bucket limit
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+- Question: what file size does the Phase 4 acceptance "S3 upload and download stream through the backend for a file of at least 100 MB" require, now that the emulator cannot store one?
+- Found: `services/service-com-amazonaws-s3-amazons3/src/state.rs` sets `MAX_OBJECT_BYTES_PER_BUCKET = 64 * 1024 * 1024` (also `MAX_OBJECTS_PER_BUCKET = 1_000`, `MAX_OBJECTS_TOTAL = 10_000`), compile-time constants with no flag or environment variable; parts of an upload in flight count against it. A 120 MiB upload failed at part 8 with ValidationException "past the 67108864 bytes this emulator keeps per bucket"; 60 MiB (8 parts of 8 MiB) uploaded and downloaded intact.
+- Options: (a) lower the acceptance to a file that goes up in parts and fits, for example 60 MiB, keeping the 8 MiB part streaming as the evidence; (b) keep 100 MB and leave the item open until upstream raises the limit; (c) replace the size with a memory bound on the app process during a transfer.
+- Recommendation: (a), with the per-bucket limit shown in the upload notice when the emulator refuses a part. [agent]
+
+### ASD-Q12: Whether a yellow primary read keeps a whole page UI-only
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+- Question: should a page stay UI-only (ASD-D9) when its primary read is yellow, given what that blocks on these pages?
+- Found: SQS `ListQueues` is yellow (2/7; the failing steps are body-shape and pagination mismatches, the plain listing worked in Phase 2), so the Queues page is UI-only and Create queue, whose only entry is on that page, is unreachable; queues are reachable only by URL or from an SNS subscription. DynamoDB `Scan` (222/287) and `Query` (197/260) make Explore items UI-only; SNS `ListSubscriptions` (2/4) makes the Subscriptions page and a queue's SNS subscriptions tab UI-only.
+- Options: (a) keep ASD-D9 as is; (b) UI-only only when the primary read is red, so a yellow primary read loads data with a "partly supported" banner and yellow actions stay disabled; (c) keep the rule and add a Create queue entry outside the Queues page.
+- Recommendation: (b), because the partial tiers of these reads come from edge cases the pages do not use, while (a) hides working green actions. [agent]

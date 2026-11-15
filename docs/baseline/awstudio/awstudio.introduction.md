@@ -4,14 +4,14 @@ pack: "awstudio"
 document: "introduction"
 status: "active"
 updated: "2026-11-15"
-code_ref: "8ce1a04"
+code_ref: "81673f4"
 ---
 
 # awstudio - introduction
 
 ## Scope
 
-`awstudio` is a Tauri v2 desktop app (Windows first, Linux deferred, ASD-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awstudio.hallucination.md` ASD-D1 to ASD-D28.
+`awstudio` is a Tauri v2 desktop app (Windows first, Linux deferred, ASD-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awstudio.hallucination.md` ASD-D1 to ASD-D30.
 
 In scope:
 
@@ -28,10 +28,10 @@ Out of scope until after packaging: embedded mode (ASD-D5).
 
 | Item | State |
 |---|---|
-| Application code | Phase 0 scaffold, Phase 1 runtime providers (Docker, native WSL, attach), Phase 2 session loading, shared SDK clients with the endpoint guard and generated bindings, and Phase 3 capability matrix, console shell, Console Home, Emulator page, Unified Settings, page patterns and per-service support landing pages are committed; no service console pages |
+| Application code | Phase 0 scaffold, Phase 1 runtime providers (Docker, native WSL, attach), Phase 2 session loading, shared SDK clients with the endpoint guard and generated bindings, and Phase 3 capability matrix, console shell, Console Home, Emulator page, Unified Settings, page patterns and per-service support landing pages are committed (Phase 3 complete); Phase 4 console pages and Region-scoped commands for S3, DynamoDB, SQS and SNS are committed, Phase 4 not yet closed; the other seven services still show their support landing page |
 | Branch | `main` |
 | Committed | `.gitmodules`, `vendor/aws-emulator`, `vendor/cloudscape-demos`, this pack |
-| Windows CI | verified: GitHub Actions run 43653923870 on commit `9163495` passed (job `windows`, 4m34s) |
+| Windows CI | verified for Phase 0 (run 43653923870 on `9163495`) and Phase 1 (run 43658052256 on `3283b1a`); Phase 2 to Phase 4 code not run in CI, push not authorized |
 
 ## Vendor pins
 
@@ -54,6 +54,10 @@ Out of scope until after packaging: embedded mode (ASD-D5).
 - SigV4 authentication is on by default; each start writes new keys, a new `ca.pem`, a `config` profile and `truststore.p12` under `~/.aws/emulator/<port>/` (`%USERPROFILE%\.aws\emulator\<port>\` on Windows).
 - One account, `000000000000`; generated config region `us-east-1`. State is partitioned by region: SQS queues of one name in `us-east-1` and `eu-west-1` are separate resources, each listed and tagged only in its own region (measured in Phase 2).
 - SQS returns queue URLs on real AWS hosts (`https://sqs.<region>.amazonaws.com/000000000000/<name>`); calls still work because clients send to the endpoint override.
+- SQS reports `MaximumMessageSize` 1048576 bytes for a new queue (measured in Phase 4).
+- S3 keeps at most 64 MiB of object bytes per bucket, parts of uploads in flight included, 1000 objects per bucket and 10000 objects in total; compile-time constants in `services/service-com-amazonaws-s3-amazons3/src/state.rs`, no flag or variable changes them (ASD-Q11).
+- SNS delivers to an SQS subscription only when the queue policy grants `sns.amazonaws.com` `SQS:SendMessage`, as AWS does; without the grant `Publish` succeeds and the queue stays empty (measured in Phase 4).
+- DynamoDB `ItemCount` stays 0 after `PutItem` (measured in Phase 4).
 - The generated `config` is written from where the emulator runs, so in a container or WSL its `ca_bundle` is that side's path and its `endpoint_url` can name that side's bind address; clients take the endpoint and CA path from the Windows side and only the region from the file (file contents under Docker not inspected).
 - State is in memory only; stopping the emulator deletes all emulated resources. A container over its memory limit exits 137 and loses state.
 - Lambda runs Node.js and Python handlers inside the emulator process; upstream says function code "isn't isolated from your machine".

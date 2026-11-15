@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "roadmap"
 status: "active"
 updated: "2026-11-15"
-code_ref: "8ce1a04"
+code_ref: "81673f4"
 ---
 
 # awstudio - roadmap
@@ -17,7 +17,7 @@ code_ref: "8ce1a04"
 | Phase 1 | Runtime providers | complete | Phase 0 |
 | Phase 2 | Session and SDK access | complete | Phase 1 |
 | Phase 3 | Console shell and capability matrix | complete | Phase 2 |
-| Phase 4 | Services wave 1: S3, DynamoDB, SQS, SNS | planned | Phase 3 |
+| Phase 4 | Services wave 1: S3, DynamoDB, SQS, SNS | blocked | Phase 3 |
 | Phase 5 | Services wave 2: IAM, Lambda | planned | Phase 4 |
 | Phase 6 | Services wave 3: Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge | planned | Phase 5 |
 | Phase 7 | API Console, fidelity catalog, seed scripts | planned | Phase 3 |
@@ -175,6 +175,23 @@ Pages:
 
 Acceptance: every green control works against the running emulator; S3 upload and download stream through the backend for a file of at least 100 MB; the Phase 3 gating acceptance (UI-only page with empty table, banner and disabled actions; green control calls the backend; red control disabled with its reason) is repeated on these pages (ASD-D28).
 
+Checkpoint (pages and commands implemented, committed in `f737fab`, `2ff5f40`, `5bb1850` and `81673f4`; waits on ASD-Q11 and ASD-Q12 and the owner's approval):
+
+| Acceptance | State |
+|---|---|
+| Every green control works against the running emulator | verified for the controls listed below; green controls inside a UI-only page are disabled by ASD-D9, which leaves SQS without a reachable Create queue (ASD-Q12) |
+| S3 upload and download of at least 100 MB through the backend | not achievable on v1.0.382: the emulator keeps at most 64 MiB of object bytes per bucket, parts in flight included (ASD-Q11); 60 MiB verified through the backend transfer functions; the native file dialogs not driven |
+| Phase 3 gating acceptance repeated on the real pages | verified: SQS Queues, Explore items and SNS Subscriptions are UI-only with the banner "Not supported by AWS Emulator v1.0.382", no data loaded and every action disabled; Default encryption, SNS subscriptions of a queue and dead-letter source queues are UI-only sections; yellow controls (bucket policy Edit, lifecycle rules, DynamoDB Manage tags, Delete items) are disabled with their reason; green controls call the backend |
+
+- Pages: S3 buckets, create bucket, bucket details (Objects, Properties, Permissions, Management), object details and versions; DynamoDB dashboard, tables, create table, table details (Indexes, Backups, Additional settings), Explore items, JSON item editor, PartiQL editor, backups; SQS queues, create and edit queue, queue details (SNS subscriptions, Lambda triggers note, dead-letter queue, tagging, access policy, encryption), send and receive; SNS dashboard, topics, create topic, topic details, publish, subscriptions, create subscription, subscription details. Routes in `awstudio.sourcecode.md`.
+- Commands: 70 Region-scoped commands (S3 27, DynamoDB 17, SQS 12, SNS 14); every backend error names `service:Operation`, carried over from Phase 3.
+- Evidence: `cargo test --lib` 39 passed; `cargo test --test bindings` passed; `cargo test --test live_s3_transfer -- --ignored` with 60 MiB passed (upload 62914560 bytes in 1.52 s, 8 parts and 9 progress reports, download in 0.92 s, digests equal) and with 120 MiB failed at part 8 with the emulator's per-bucket limit; `npx tsc --noEmit` and `npm run build` passed (main chunk 1434.65 kB).
+- Verified in the dev app over WebView2 remote debugging, Docker emulator running: create bucket (Block Public Access all on), create folder, object details, object tags, versions; create table, create item, duplicate key refused with ConditionalCheckFailedException, PartiQL SELECT, create backup, TTL status, dashboard counts; queue details, edit visibility timeout to 45, queue tags, send, poll, delete message, purge; create topic, create subscription with the queue policy grant, publish delivered to the queue; in `eu-west-1` the tables list showed none of the `us-east-1` tables; no console errors after a reload.
+- Defects found and fixed in this phase: every create or edit form sent its request twice (cause and fix in ASD-D29); `serde_json::Value` could not be exported to the bindings (ASD-D30); the queue form capped Maximum message size at 262144 bytes while the emulator reports 1048576.
+- Not verified: the Upload and Download buttons through the native dialogs; the release build window; Windows CI (push not authorized); restore from backup; time to live turned on; the queue form's dead-letter queue fields; the subscription filter policy editor; Enter in a form whose operation is not green.
+- Risk: SNS to SQS delivery needs the topic granted in the queue policy, as on AWS; the Create subscription page adds that grant for SQS endpoints by default and changes the queue policy. DynamoDB item counts stay 0 after writes in this emulator. Each list command describes every resource it lists, one call per resource.
+- Changed files: `src-tauri/Cargo.toml`, `Cargo.lock` (`aws-sdk-dynamodb`, `aws-sdk-sns`, `aws-sdk-sqs`, `aws-smithy-types`, `tauri-plugin-dialog`, `tokio`), `src-tauri/src/aws.rs`, `src-tauri/src/commands.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/services/` (`mod.rs`, `s3.rs`, `dynamodb.rs`, `sqs.rs`, `sns.rs`), `src-tauri/tests/live_s3_transfer.rs`, `src-tauri/tests/live_session.rs`, `src/bindings.ts`, `src/capability/index.tsx`, `src/patterns/CreateForm.tsx`, `src/services/` (`common.tsx`, `routes.tsx`, `s3/S3Pages.tsx`, `dynamodb/DynamoDbPages.tsx`, `sqs/SqsPages.tsx`, `sns/SnsPages.tsx`), `src/App.tsx`.
+
 ## Phase 5: Services wave 2: IAM, Lambda
 
 Pages:
@@ -228,7 +245,9 @@ Deferred by ASD-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 | Upstream release velocity | Stale capability claims | ASD-D13 drift tool |
 | Running version differs from pin | Wrong gating | ASD-D14 banner, ASD-D18 |
 | Smithy models 118 MB | Large installer | Trimmed bundle in Phase 7 |
+| Emulator per-bucket limit of 64 MiB of object bytes, 1000 objects | Large uploads refused; 100 MB acceptance unreachable | ASD-Q11 |
+| Yellow primary reads make whole pages UI-only | SQS has no reachable Create queue | ASD-Q12 |
 
 ## Next action
 
-Phase 3 is complete. Phase 4 (services wave 1: S3, DynamoDB, SQS, SNS) is the next ready phase and starts only when the owner asks for it; its acceptance includes repeating the Phase 3 gating acceptance on the real pages (ASD-D28). Carry into Phase 4: backend errors should report `service:Operation`, and service commands should take the selected Region. The Docker emulator is left running. Pushing for CI of Phase 2 and Phase 3 code is not yet authorized.
+Phase 4 is implemented and committed but not closed. The owner answers ASD-Q11 (the S3 transfer size acceptance against the 64 MiB per-bucket limit) and ASD-Q12 (whether a yellow primary read keeps a whole page UI-only), then approves or reopens Phase 4. Phase 5 starts only after that and only when the owner asks. The Docker emulator is left running. Pushing for CI of Phase 2 to Phase 4 code is not yet authorized.
