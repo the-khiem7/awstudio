@@ -6,11 +6,11 @@ import Button from "@cloudscape-design/components/button";
 import Form from "@cloudscape-design/components/form";
 import Header from "@cloudscape-design/components/header";
 import SpaceBetween from "@cloudscape-design/components/space-between";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { errorText } from "../runtime/api";
 import { useReportUnsupported } from "../capability";
 import { InfoLink, type HelpContent } from "../shell/ConsolePage";
-import { GatedButton, UnsupportedBanner, useUiOnly } from "./gating";
+import { GatedButton, UnsupportedBanner, useGate, useUiOnly } from "./gating";
 import { useUnsavedChanges } from "./unsaved";
 
 export interface CreateFormProps {
@@ -46,9 +46,15 @@ export function CreateForm(props: CreateFormProps) {
   const [error, setError] = useState<string | null>(null);
   const guard = useUnsavedChanges(props.dirty && !submitting);
 
+  // One request per submit: the primary button is the form's submit button, so a click submits
+  // the form once and Enter in a field submits it the same way.
+  const inFlight = useRef(false);
+  const gate = useGate(props.op, props.feature);
   const submit = async (e?: FormEvent) => {
     e?.preventDefault();
-    if (props.validate && !props.validate()) return;
+    // A gated button is only aria-disabled (so its reason shows), which does not stop Enter.
+    if (inFlight.current || !gate.enabled || (props.validate && !props.validate())) return;
+    inFlight.current = true;
     setSubmitting(true);
     setError(null);
     try {
@@ -59,6 +65,7 @@ export function CreateForm(props: CreateFormProps) {
       reportUnsupported(err);
       setError(errorText(err));
     } finally {
+      inFlight.current = false;
       setSubmitting(false);
     }
   };
@@ -78,7 +85,7 @@ export function CreateForm(props: CreateFormProps) {
             <Button variant="link" formAction="none" onClick={() => guard.leave(props.cancelHref)}>
               Cancel
             </Button>
-            <GatedButton variant="primary" op={props.op} feature={props.feature} loading={submitting} onClick={() => submit()}>
+            <GatedButton variant="primary" op={props.op} feature={props.feature} loading={submitting}>
               {props.submitLabel ?? (props.mode === "edit" ? "Save changes" : "Create")}
             </GatedButton>
           </SpaceBetween>
