@@ -31,7 +31,8 @@ export interface CreateFormProps {
    * (the form-validation pattern validates on submit, then on change).
    */
   validate?: () => boolean;
-  onSubmit: () => Promise<void>;
+  /** Saves the form; may return the route of the created resource to go to instead of `doneHref`. */
+  onSubmit: () => Promise<void | string>;
   /** Where Cancel and a successful submit go. */
   cancelHref: string;
   doneHref?: string;
@@ -58,9 +59,9 @@ export function CreateForm(props: CreateFormProps) {
     setSubmitting(true);
     setError(null);
     try {
-      await props.onSubmit();
+      const created = await props.onSubmit();
       guard.release();
-      guard.go(props.doneHref ?? props.cancelHref);
+      guard.go(created || (props.doneHref ?? props.cancelHref));
     } catch (err) {
       reportUnsupported(err);
       setError(errorText(err));

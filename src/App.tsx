@@ -11,6 +11,7 @@ import { EmulatorPage } from "./pages/EmulatorPage";
 import { ServiceLanding } from "./pages/ServiceLanding";
 import { SettingsPage } from "./pages/SettingsPage";
 import { RuntimeStatusProvider } from "./runtime/RuntimeStatus";
+import { hasServicePages, servicePage } from "./services/routes";
 import { ConsolePage } from "./shell/ConsolePage";
 import { TelemetryNotice, VersionNotice } from "./shell/GlobalNotices";
 import { NotificationsProvider } from "./shell/notifications";
@@ -41,7 +42,7 @@ function NotFound({ path }: { path: string }) {
 }
 
 function Routes() {
-  const { path } = useLocation();
+  const { path, query } = useLocation();
   const service = serviceForPath(path);
 
   useEffect(() => {
@@ -53,6 +54,7 @@ function Routes() {
   if (path === "/") page = <ConsoleHome />;
   else if (path === "/emulator") page = <EmulatorPage />;
   else if (path === "/settings") page = <SettingsPage />;
+  else if (service && hasServicePages(service.id)) page = servicePage(service.id, path, query) ?? <NotFound path={path} />;
   else if (service) page = <ServiceLanding key={service.id} service={service} />;
   else if (PatternGallery && (gallery || path === "/dev/patterns"))
     page = (

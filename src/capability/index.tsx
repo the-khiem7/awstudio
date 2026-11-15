@@ -54,6 +54,11 @@ export function useReportUnsupported() {
   return useCapabilityContext().reportUnsupported;
 }
 
+/** Operations, or `service:Operation#variant` pairs, that answered HTTP 501 during this run. */
+export function useRuntime501(): ReadonlySet<string> {
+  return useCapabilityContext().runtime501;
+}
+
 /** `AWS Emulator v1.0.382`, the build the matrix was made from. */
 export function emulatorLabel(matrix: CapabilityMatrix | null): string {
   return matrix ? `AWS Emulator ${matrix.vendor.tag}` : "AWS Emulator";
