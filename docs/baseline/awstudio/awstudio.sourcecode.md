@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-15"
-code_ref: "81673f4"
+code_ref: "b718f5c"
 ---
 
 # awstudio - source code
@@ -74,18 +74,18 @@ Committed in `11a6413` to `52fe16d`, navigation guard in `8ce1a04`; verification
 | `src/pages/` | `ConsoleHome` (board), `EmulatorPage`, `SettingsPage`, `ServiceLanding` (support table per service), `PatternGallery` (dev builds only) |
 | `src/App.tsx` | Providers, sticky `#top-nav`, routes |
 
-- A page whose primary List or Describe operation is not green wraps its content in `UiOnlyScope`; every `GatedButton` inside is disabled with the page's reason.
+- A page whose primary List or Describe operation is red or not judged yet wraps its content in `UiOnlyScope` as UI-only; every `GatedButton` inside is disabled with the page's reason. A yellow primary read loads data under a partly supported banner (ASD-D32, `gating.tsx` row below).
 - Control ids are `<service key>:<Operation>`; the service key is the SDK id slug (ASD-D26 in `awstudio.hallucination.md`).
 
 ## Implemented in Phase 4
 
-Committed in `f737fab`, `2ff5f40`, `5bb1850` and `81673f4`; verification is in the Phase 4 checkpoint of `awstudio.roadmap.md`.
+Committed in `f737fab`, `2ff5f40`, `5bb1850` and `81673f4`, partial-read gating, S3 default encryption and the upload limit hint in `3007e58`, `d241796` and `b718f5c`; verification is in the Phase 4 checkpoint of `awstudio.roadmap.md`.
 
 | Path | Role |
 |---|---|
 | `src-tauri/src/aws.rs` | `Clients::s3_in`, `dynamodb_in`, `sqs_in`, `sns_in` (a client per Region, guard attached), `is_region_code`, `ApiError::Invalid`; `map_sdk_error` takes `service:Operation` |
 | `src-tauri/src/services/mod.rs` | `Tag`, `Json` (crosses IPC as TypeScript `unknown`, ASD-D30), timestamp helpers |
-| `src-tauri/src/services/s3.rs` | 27 commands; `upload_file` (PutObject below 16 MiB, 8 MiB parts above, abort on failure), `download_to` (`.part` file renamed on success), native dialogs opened by the backend |
+| `src-tauri/src/services/s3.rs` | 28 commands (`s3_get_bucket_encryption` returns none when the bucket has no configuration); `upload_file` (PutObject below 16 MiB, 8 MiB parts above, abort on failure), `download_to` (`.part` file renamed on success), native dialogs opened by the backend |
 | `src-tauri/src/services/dynamodb.rs` | 17 commands; DynamoDB JSON to and from SDK attribute values |
 | `src-tauri/src/services/sqs.rs`, `sns.rs` | 12 and 14 commands |
 | `src-tauri/tests/live_s3_transfer.rs` | Ignored live test of a multipart upload and download, 60 MiB by default (`AWSTUDIO_TRANSFER_MIB`) |
@@ -93,6 +93,7 @@ Committed in `f737fab`, `2ff5f40`, `5bb1850` and `81673f4`; verification is in t
 | `src/services/<svc>/<Svc>Pages.tsx` | One module per service exporting `<svc>Page(path, query)`; `SqsPages` also exports `queueUrlOfArn` and `allowTopic` |
 | `src/services/routes.tsx` | `servicePage`, `hasServicePages`; `App.tsx` falls back to the support landing page for services without pages |
 | `src/patterns/CreateForm.tsx` | `onSubmit` may return the route to open; one request per submit (ASD-D29) |
+| `src/patterns/gating.tsx` | `usePageCapability` sets `uiOnly` for a red or unjudged primary read and `partial` for a yellow one (ASD-D32); `UiOnlyScope` provides both with `primaryOp`; `useGate` enables `primaryOp` on a partial scope and leaves every other control to its own tier; `ScopeBanner` renders `UnsupportedBanner` or `PartialBanner`, used by `CreateForm`, `DetailsPage`, `ServiceDashboard` and the service sections |
 
 Routes (hash paths mirroring console paths):
 

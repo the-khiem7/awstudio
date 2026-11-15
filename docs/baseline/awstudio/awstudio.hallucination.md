@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "hallucination"
 status: "active"
 updated: "2026-11-15"
-code_ref: "81673f4"
+code_ref: "b718f5c"
 ---
 
 # awstudio - decisions and open questions
@@ -23,7 +23,7 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASD-D6 | Per-machine build toolchain profiles | closed | ASD-D7, ASD-D15, ASD-D20, ASD-Q5 |
 | ASD-D7 | Target platforms: Windows with Docker first, Linux deferred | closed | ASD-D4, ASD-D6, ASD-Q3 |
 | ASD-D8 | Service scope and generic API Console | closed | ASD-D9 |
-| ASD-D9 | Capability tiers and UI gating | closed | ASD-D8, ASD-D10, ASD-D11 |
+| ASD-D9 | Capability tiers and UI gating | closed, reversed in part by ASD-D32 | ASD-D8, ASD-D10, ASD-D11, ASD-D32 |
 | ASD-D10 | Lambda Code tab is functional | closed | ASD-D9, ASD-D11 |
 | ASD-D11 | Lesson: branch-level not_implemented read as whole-operation gaps | lesson | ASD-D9, ASD-D10 |
 | ASD-D12 | Emulator telemetry default | closed | - |
@@ -45,9 +45,9 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASD-D28 | Phase 3 acceptance accepted on the development gallery, repeated on the Phase 4 pages | closed | ASD-D9, ASD-Q10 |
 | ASD-D29 | Lesson: the create form's submit button sent each request twice | lesson | ASD-D3, ASD-D28 |
 | ASD-D30 | Lesson: specta refuses to export serde_json::Value to the bindings | lesson | ASD-D23 |
+| ASD-D31 | S3 transfer acceptance sized to the emulator's 64 MiB per-bucket limit | closed | ASD-D18, ASD-Q11 |
+| ASD-D32 | A yellow primary read loads its page under a partly supported banner | closed | ASD-D9, ASD-D28, ASD-Q12 |
 | ASD-Q7 | Native provider install source: no DEB package URL known | open, deferred | ASD-D4, ASD-D7 |
-| ASD-Q11 | S3 transfer acceptance size against the emulator's 64 MiB per-bucket limit | open | ASD-D18 |
-| ASD-Q12 | Whether a yellow primary read keeps a whole page UI-only | open | ASD-D9, ASD-D28 |
 
 ## Closed decisions
 
@@ -339,6 +339,32 @@ Closes ASD-Q10.
 - What disproved it: `cargo test --test bindings` failed with "Specta forbids exporting BigInt-style types (usize, isize, i64, u64, i128, u128)", because `Value::Number` holds an `i64` that TypeScript `number` cannot hold losslessly.
 - Fix: a `Json(serde_json::Value)` newtype with `#[serde(transparent)]` whose `specta::Type` returns `specta_typescript::Unknown`, so the bindings type is `unknown`; the `serde_json` feature was removed again. DynamoDB numbers travel as strings inside DynamoDB JSON, so no precision is lost. [agent]
 
+### ASD-D31: S3 transfer acceptance sized to the emulator's 64 MiB per-bucket limit
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+Closes ASD-Q11.
+
+- Decision (Kai, 2026-11-15): the Phase 4 S3 transfer acceptance is a multipart upload and download through the backend of a file that fits the emulator's per-bucket limit, 60 MiB (8 parts of 8 MiB), in place of "at least 100 MB".
+- Decision (Kai, 2026-11-15): the upload notice explains the per-bucket limit when the emulator refuses a part or an object for it.
+- Why: `services/service-com-amazonaws-s3-amazons3/src/state.rs` sets `MAX_OBJECT_BYTES_PER_BUCKET = 64 * 1024 * 1024` (also `MAX_OBJECTS_PER_BUCKET = 1_000`, `MAX_OBJECTS_TOTAL = 10_000`) as compile-time constants with no flag or environment variable, and parts of an upload in flight count against it; a 120 MiB upload failed at part 8 with ValidationException "past the 67108864 bytes this emulator keeps per bucket", while 60 MiB uploaded and downloaded intact; the 8 MiB part streaming is the evidence the size stood for [agent]; owner chose it [user].
+- What breaks if ignored: the acceptance is unreachable on v1.0.382 and Phase 4 cannot close; without the notice hint a user who hits the limit reads a bare ValidationException with no next step.
+- Rejected: (b) keep 100 MB and leave the item open until upstream raises the limit - blocks the phase on an upstream change with no date [user].
+- Rejected: (c) replace the size with a memory bound on the app process during a transfer - measures memory use, not whether the transfer works [user].
+
+### ASD-D32: A yellow primary read loads its page under a partly supported banner
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+Closes ASD-Q12. Reverses in part ASD-D9 (its rule that a page whose primary read is not green is UI-only); the rest of ASD-D9 stands.
+
+- Decision (Kai, 2026-11-15): a page, or a section with its own primary read, is UI-only only when its primary read operation is red or not judged yet; a yellow primary read loads data under a "Partly supported by AWS Emulator vX" banner and that read may run, while every other yellow control stays disabled.
+- Why: the partial tiers of these reads come from edge cases the pages do not use (SQS `ListQueues` 2/7 fails on body-shape and pagination steps; the plain listing worked in Phase 2), while keeping them UI-only hid working green actions [agent]; owner chose it [user].
+- What breaks if ignored: SQS Queues (`ListQueues`), Explore items (`Scan` 222/287), SNS Subscriptions and a queue's SNS subscriptions tab (`ListSubscriptions` 2/4), dead-letter source queues (`ListDeadLetterSourceQueues` 4/6) and S3 Default encryption (`GetBucketEncryption` 5/32) load nothing, and Create queue, whose only entry is on the Queues page, is unreachable, so queues are reachable only by URL or from an SNS subscription.
+- Consequence: only the scope's own primary read runs, so Query in Explore items (yellow, 197/260) stays disabled, and the SNS Dashboard subscription count stays "-" because `ListSubscriptions` is not that page's primary read [agent].
+- Rejected: (a) keep ASD-D9 as is - hides working green actions such as Create queue [user].
+- Rejected: (c) keep the rule and add a Create queue entry outside the Queues page - fixes one action and leaves the yellow-read pages empty [user].
+
 ## Open questions
 
 ### ASD-Q7: Native provider install source: no DEB package URL known
@@ -348,22 +374,3 @@ Closes ASD-Q10.
 - Options: document an RPM extraction (`rpm2cpio`) into a user directory, find the real DEB URL on the AWS Linux guide, or keep the setting and leave installation to the user.
 - Recommendation: keep the setting and leave installation to the user until the AWS Linux guide shows a DEB URL. [agent]
 - Deferred (Kai, 2026-11-15): not answered now; work concentrates on the Docker provider, and the native provider stays as built, reading `wsl_binary` from settings [user].
-
-
-### ASD-Q11: S3 transfer acceptance size against the emulator's 64 MiB per-bucket limit
-
-**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
-
-- Question: what file size does the Phase 4 acceptance "S3 upload and download stream through the backend for a file of at least 100 MB" require, now that the emulator cannot store one?
-- Found: `services/service-com-amazonaws-s3-amazons3/src/state.rs` sets `MAX_OBJECT_BYTES_PER_BUCKET = 64 * 1024 * 1024` (also `MAX_OBJECTS_PER_BUCKET = 1_000`, `MAX_OBJECTS_TOTAL = 10_000`), compile-time constants with no flag or environment variable; parts of an upload in flight count against it. A 120 MiB upload failed at part 8 with ValidationException "past the 67108864 bytes this emulator keeps per bucket"; 60 MiB (8 parts of 8 MiB) uploaded and downloaded intact.
-- Options: (a) lower the acceptance to a file that goes up in parts and fits, for example 60 MiB, keeping the 8 MiB part streaming as the evidence; (b) keep 100 MB and leave the item open until upstream raises the limit; (c) replace the size with a memory bound on the app process during a transfer.
-- Recommendation: (a), with the per-bucket limit shown in the upload notice when the emulator refuses a part. [agent]
-
-### ASD-Q12: Whether a yellow primary read keeps a whole page UI-only
-
-**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
-
-- Question: should a page stay UI-only (ASD-D9) when its primary read is yellow, given what that blocks on these pages?
-- Found: SQS `ListQueues` is yellow (2/7; the failing steps are body-shape and pagination mismatches, the plain listing worked in Phase 2), so the Queues page is UI-only and Create queue, whose only entry is on that page, is unreachable; queues are reachable only by URL or from an SNS subscription. DynamoDB `Scan` (222/287) and `Query` (197/260) make Explore items UI-only; SNS `ListSubscriptions` (2/4) makes the Subscriptions page and a queue's SNS subscriptions tab UI-only.
-- Options: (a) keep ASD-D9 as is; (b) UI-only only when the primary read is red, so a yellow primary read loads data with a "partly supported" banner and yellow actions stay disabled; (c) keep the rule and add a Create queue entry outside the Queues page.
-- Recommendation: (b), because the partial tiers of these reads come from edge cases the pages do not use, while (a) hides working green actions. [agent]
