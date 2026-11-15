@@ -308,8 +308,8 @@ pub async fn session_check(state: State<'_, AppState>) -> Result<SessionCheck, A
         .get_caller_identity()
         .send()
         .await
-        .map_err(|e| map_sdk_error("GetCallerIdentity", e))?;
-    let buckets = clients.s3().list_buckets().send().await.map_err(|e| map_sdk_error("ListBuckets", e))?;
+        .map_err(|e| map_sdk_error("sts:GetCallerIdentity", e))?;
+    let buckets = clients.s3().list_buckets().send().await.map_err(|e| map_sdk_error("s3:ListBuckets", e))?;
     let s = clients.session();
     Ok(SessionCheck {
         endpoint_url: s.endpoint_url.clone(),

@@ -22,14 +22,14 @@ fn identity_and_buckets(clients: &Clients) -> (String, usize) {
             .get_caller_identity()
             .send()
             .await
-            .map_err(|e| map_sdk_error("GetCallerIdentity", e))
+            .map_err(|e| map_sdk_error("sts:GetCallerIdentity", e))
             .expect("GetCallerIdentity");
         let buckets = clients
             .s3()
             .list_buckets()
             .send()
             .await
-            .map_err(|e| map_sdk_error("ListBuckets", e))
+            .map_err(|e| map_sdk_error("s3:ListBuckets", e))
             .expect("ListBuckets");
         (id.account().unwrap_or_default().to_string(), buckets.buckets().len())
     })

@@ -98,10 +98,12 @@ export function judge(
   const [service, name] = splitOp(id);
   const op = matrix.services[service]?.ops[name];
   if (!op) return { tier: "unknown", enabled: false, reason: `${name} is not modeled by ${label}` };
-  if (runtime501.has(name) || runtime501.has(`${service}:${name}`)) {
+  // Backend errors name the operation as `service:Operation`, so a 501 disables only that
+  // service's control, not a same-named operation of another service.
+  if (runtime501.has(`${service}:${name}`)) {
     return { tier: "red", enabled: false, reason: `${name} answered HTTP 501 during this emulator run`, pass: op.pass };
   }
-  if (variant && (runtime501.has(`${name}#${variant}`) || variantUnsupported(op, variant))) {
+  if (variant && (runtime501.has(`${service}:${name}#${variant}`) || variantUnsupported(op, variant))) {
     return { tier: op.tier, enabled: false, reason: `${name} with ${variant} is not supported by ${label}`, pass: op.pass };
   }
   switch (op.tier) {

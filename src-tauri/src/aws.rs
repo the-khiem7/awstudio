@@ -175,9 +175,10 @@ where
     let code = err.code().map(str::to_string);
     let message = err.message().map(str::to_string);
     if status == Some(501) || code.as_deref() == Some("NotImplemented") {
+        let name = op.rsplit(':').next().unwrap_or(op);
         return ApiError::Unsupported {
             op: op.to_string(),
-            variant: message.as_deref().and_then(|m| unsupported_variant(op, m)),
+            variant: message.as_deref().and_then(|m| unsupported_variant(name, m)),
             version: PINNED_VERSION.to_string(),
         };
     }
@@ -266,7 +267,7 @@ mod tests {
         let session = test_session("https://sts.amazonaws.com");
         let clients = Clients::new(session).unwrap();
         let err = tauri::async_runtime::block_on(clients.sts().get_caller_identity().send()).unwrap_err();
-        let mapped = map_sdk_error("GetCallerIdentity", err);
+        let mapped = map_sdk_error("sts:GetCallerIdentity", err);
         assert!(matches!(mapped, ApiError::Guard { .. }), "{mapped:?}");
     }
 
