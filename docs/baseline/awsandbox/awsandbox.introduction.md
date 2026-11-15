@@ -28,7 +28,7 @@ Out of scope until after packaging: embedded mode (ASB-D5).
 
 | Item | State |
 |---|---|
-| Application code | Phase 0 scaffold, uncommitted: empty Cloudscape AppLayout in a Tauri window, STS client with a custom-CA HTTP client that compiles; no console pages |
+| Application code | Phase 0 scaffold committed; Phase 1 runtime providers (Docker, native WSL, attach), their Tauri commands and a Runtime page are in the working tree, uncommitted; no console pages |
 | Branch | `main` |
 | Committed | `.gitmodules`, `vendor/aws-emulator`, `vendor/cloudscape-demos`, this pack |
 | Windows CI | verified: GitHub Actions run 43653923870 on commit `9163495` passed (job `windows`, 4m34s) |

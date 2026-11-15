@@ -9,7 +9,7 @@ code_ref: "uncommitted"
 
 # awsandbox - source code
 
-Everything under "Planned" is design, not implemented code unless "Implemented in Phase 0" lists it. "Vendor topology" describes the pinned submodule as inspected.
+Everything under "Planned" is design, not implemented code unless "Implemented in Phase 0" or "Implemented in Phase 1" lists it. "Vendor topology" describes the pinned submodule as inspected.
 
 ## Implemented in Phase 0
 
@@ -25,6 +25,23 @@ Committed in `d535a96`; verified items are in the Phase 0 checkpoint of `awsandb
 | `tools/vendor-drift/vendor_drift.py` | Two-commit comparison for the 11 services |
 | `tools/hygiene/hygiene.py`, `.githooks/pre-commit` | Staged-text check run through `uv` |
 | `.github/workflows/ci.yml` | Windows build of the scaffold, actions pinned by commit SHA |
+
+## Implemented in Phase 1
+
+Uncommitted working tree; verification is in the Phase 1 checkpoint of `awsandbox.roadmap.md`.
+
+| Path | Role |
+|---|---|
+| `src-tauri/src/provider/mod.rs` | `Provider` trait, `Endpoint`, `LogLine`, `ProviderError`, the pin constants and the key filename constant |
+| `src-tauri/src/provider/docker.rs` | `docker` CLI driver: engine classification, path translation, Dockerfile with signature check, `docker run` arguments |
+| `src-tauri/src/provider/native.rs` | `wsl.exe --exec env HOME=<windows profile> aws-emulator ...`, log hub that replays and streams |
+| `src-tauri/src/provider/attach.rs` | Health only; stop, restart, version and logs are unsupported |
+| `src-tauri/src/provider/health.rs` | HTTPS `GET /__admin/health` trusting only the emulator CA, on a plain OS thread |
+| `src-tauri/src/provider/version.rs` | `aws-emulator -v` parser and pinned-commit comparison |
+| `src-tauri/src/provider/settings.rs` | `settings.json` in the app config directory |
+| `src-tauri/src/commands.rs` | Tauri commands over one locked `Runtime`; `provider_status` uses `try_lock` and reports `busy` |
+| `src-tauri/tests/live_providers.rs` | Ignored live tests against a real engine and a WSL binary |
+| `src/runtime/` | `api.ts` (hand-written `invoke` wrappers) and `Runtime.tsx` (status, provider settings, logs, modals) |
 
 ## Planned architecture
 

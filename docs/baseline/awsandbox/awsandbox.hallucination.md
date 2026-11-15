@@ -35,6 +35,10 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASB-D18 | Pin only tags that have a matching LTS package | closed | ASB-D13, ASB-D14, ASB-Q2 |
 | ASB-D19 | Code signing and updater signing timing | closed | ASB-D7, ASB-Q4 |
 | ASB-D20 | Lesson: windows-gnu target fails with llvm-mingw, gnullvm builds | lesson | ASB-D6, ASB-D7 |
+| ASB-D21 | Lesson: gnupg2-minimal cannot verify the package signature in the image build | lesson | ASB-D4, ASB-D18 |
+| ASB-D22 | External agent skills tauri-v2 and modern-web-guidance not adopted | closed | ASB-D2, ASB-D17, ASB-D20 |
+| ASB-Q6 | Default container memory limit | open | ASB-D4 |
+| ASB-Q7 | Native provider install source: no DEB package URL known | open | ASB-D4, ASB-D7 |
 
 ## Closed decisions
 
@@ -239,3 +243,35 @@ Closes ASB-Q4.
 - Why it looked reasonable: the target installs, llvm-mingw ships `x86_64-w64-mingw32-gcc`, and a build with `CARGO_BUILD_TARGET` set starts compiling.
 - What disproved it: with the MSVC host toolchain, build scripts and proc macros still link for the host and fail with `link.exe` not found; with the GNU host toolchain the link fails with `unable to find library -lgcc_eh` and `-lgcc`, which llvm-mingw does not ship (it uses compiler-rt and libunwind); a `cdylib` crate type then failed with `too many exported symbols (got 90650, max 65535)`.
 - Fix: `x86_64-pc-windows-gnullvm` as the host toolchain (`stable-x86_64-pc-windows-gnullvm`, exported as `RUSTUP_TOOLCHAIN` from the machine file) with llvm-mingw `bin` on `PATH`; `crate-type = ["rlib"]` because the desktop app needs neither `staticlib` nor `cdylib`. The Tauri skeleton, `aws-sdk-sts` and the aws-lc-rs TLS stack then build, so neither `cargo-xwin` nor the `rustls-ring` feature was needed.
+
+### ASB-D21: Lesson: gnupg2-minimal cannot verify the package signature in the image build
+
+- Believed: the Dockerfile verify stage can install `gnupg2-minimal` on `amazonlinux:2023` and run `gpg --import` then `gpg --verify` (ASB-D4 Phase 1 task 2, signature check on the pinned package).
+- Why it looked reasonable: the minimal package provides `/usr/bin/gpg`, `gpg --import` printed `imported: 1`, and the AWS guide only says "you need GnuPG (gpg)".
+- What disproved it: `gnupg2-minimal` ships no `gpg-agent`, so the import exits 2 (`can't connect to the gpg-agent: Configuration error`) and the `&&` chain stops before the fingerprint and signature checks; the build failed on the first run.
+- Fix: `dnf install -y --allowerasing gnupg2-full`. The build then checks the key fingerprint `98BCF336A3BE53B734E967C52E5BF49BD940F624` and the detached `.sig`, and a build with a wrong fingerprint fails at that step (exit 1, no image produced). The rpm URL is `.../LTS/aws-emulator-<version>-1-x86_64.rpm`, not `<version>.1`. [agent]
+
+### ASB-D22: External agent skills tauri-v2 and modern-web-guidance not adopted
+
+- Decision (Kai, 2026-11-15): install neither the `tauri-v2` skill (nodnarbnitram/claude-code-extensions) nor the `modern-web-guidance` skill (GoogleChrome/modern-web-guidance) for this project; work from the official Tauri v2 and Cloudscape documentation and the closed decisions in this pack.
+- Why: the user judged them unsuitable for this workflow [user].
+- Why, agent's reading of both skills, not confirmed by the user: `tauri-v2` requires `crate-type = ["staticlib", "cdylib", "rlib"]` for mobile, which fails on the gnullvm toolchain (ASB-D20), lists `tauri-plugin-shell` as a normal plugin where ASB-D17 gives the WebView no shell permission, and was last verified 2026-04-02 against Tauri 2.12.4 pinned here; `modern-web-guidance` steers toward native HTML and CSS components where ASB-D2 fixes Cloudscape, and runs `npx -y modern-web-guidance@latest` so its content is unpinned [agent].
+- What breaks if ignored: a skill applied without those overrides pushes `cdylib` into `Cargo.toml` (link failure with 90650 exported symbols against a limit of 65535), a shell plugin into the capability file, or hand-built dialogs and selects beside Cloudscape ones.
+- Rejected: install `tauri-v2` project-scoped with override notes - the user declined [user].
+- Rejected: defer `modern-web-guidance` to the console-shell phase - the user declined it together with the other skill [user].
+
+## Open questions
+
+### ASB-Q6: Default container memory limit
+
+- Question: which default `--memory` and `--memory-swap` does the Docker provider use?
+- Measured: idle emulator with every service registered uses about 180 MiB (`docker stats`, 3 samples, version 1.0.382, `--telemetry off`); the upstream Docker guide uses `2g`.
+- Options: `2g` (about 11 times idle, upstream value, fewer exit-137 losses under load) or `1g` (about 5.5 times idle, smaller footprint, unmeasured under load).
+- Recommendation: keep `2g` until a loaded run is measured, because exit code 137 deletes all emulated resources. The code uses `2g` now. [agent]
+
+### ASB-Q7: Native provider install source: no DEB package URL known
+
+- Question: where does the native provider get its binary inside WSL?
+- Found: `downloads.aws.com/.../LTS/` serves `aws-emulator-<version>-1-x86_64.rpm` and `.sig`; guessed DEB names (`-amd64.deb`, `_amd64.deb`) return 403, so no DEB URL is known. The provider takes the executable path from settings (`wsl_binary`) and was verified with the emulator binary copied out of the Docker image into `~/awsb-bin` in Ubuntu 24.04, not with an installed package.
+- Options: document an RPM extraction (`rpm2cpio`) into a user directory, find the real DEB URL on the AWS Linux guide, or keep the setting and leave installation to the user.
+- Recommendation: keep the setting and leave installation to the user until the AWS Linux guide shows a DEB URL. [agent]

@@ -13,8 +13,8 @@ code_ref: "uncommitted"
 
 | Phase | Subject | Status | Depends on |
 |---|---|---|---|
-| Phase 0 | Foundation and toolchain gate | in progress | - |
-| Phase 1 | Runtime providers | planned | Phase 0 |
+| Phase 0 | Foundation and toolchain gate | complete | - |
+| Phase 1 | Runtime providers | implemented, awaiting approval | Phase 0 |
 | Phase 2 | Session and SDK access | planned | Phase 1 |
 | Phase 3 | Console shell and capability matrix | planned | Phase 2 |
 | Phase 4 | Services wave 1: S3, DynamoDB, SQS, SNS | planned | Phase 3 |
@@ -85,6 +85,21 @@ Acceptance:
 - Memory use of an idle emulator with all 437 services is measured and the default memory limit is set from it.
 
 Verification gate: the port published inside WSL is reachable from Windows at `127.0.0.1:<port>`.
+
+Checkpoint (tasks 1 to 7 implemented, uncommitted):
+
+| Acceptance | State |
+|---|---|
+| Start, stop, restart from the app, each provider, WSL-shim engine and Docker Desktop | verified for the Docker provider on the WSL-shim engine (`docker.cmd` into Ubuntu-24.04) through the real WebView IPC; native and attach verified against a binary copied into WSL; Docker Desktop not verified, none installed here |
+| Health turns green after start; logs stream live | health `healthy` after start through the app; logs streamed in the Rust live test (Docker and native); the UI log panel was not exercised with a running emulator |
+| Idle memory measured, default limit set from it | 180 MiB idle (version 1.0.382); default stays `2g`, choice open in ASB-Q6 |
+| Gate: WSL port reachable at `127.0.0.1:<port>` | verified: Windows `curl` and the app's HTTPS health check reached both the container and the native process |
+
+- Tasks: 1 `Provider` trait; 2 `DockerProvider` (engine classification, `/mnt/<drive>` path translation, image build with fingerprint and signature check, `127.0.0.1` publish, memory limit, JSON log stream); 3 `NativeProvider` (`wsl.exe --exec`, `HOME` on the Windows profile, SIGTERM stop); 4 `AttachProvider`; 5 `aws-emulator -v` parse and pinned-commit compare, warning banner, "Rebuild image at pinned version"; 6 first-run telemetry modal and toggle, `--telemetry off` passed when off; 7 stop and restart refuse without `confirm_data_loss` (backend) and a confirmation modal (UI).
+- Evidence: `cargo test --lib` 23 passed; `cargo test --test live_providers -- --ignored` 2 passed (Docker start, health, version, logs, restart, stop; native start, health, version, log replay, attach, stop, attach after stop fails); `npm run build` passed; release build launched and driven over WebView2 remote debugging (`get_settings`, `provider_status`, `provider_start`, `provider_version_check`, `provider_stop` without confirmation returned `confirmation_required`, `provider_stop` confirmed returned stopped); the page showed the telemetry notice on first run; a build with a wrong key fingerprint failed (ASB-D21).
+- Changed files: `src-tauri/Cargo.toml`, `Cargo.lock` (`serde`, `serde_json`, `reqwest` 0.13 with `rustls` and `blocking`), `src-tauri/src/lib.rs`, `src-tauri/src/commands.rs`, `src-tauri/src/provider/` (`mod.rs`, `process.rs`, `docker.rs`, `native.rs`, `attach.rs`, `health.rs`, `version.rs`, `settings.rs`), `src-tauri/tests/live_providers.rs`, `src/App.tsx`, `src/runtime/api.ts`, `src/runtime/Runtime.tsx`.
+- Open: ASB-Q6 (default memory limit) and ASB-Q7 (native install source, no DEB URL). Not verified: Docker Desktop; the Windows CI run of the new code; a running emulator's log panel in the UI; the `-d --rm` first run that exited at once and was not reproduced.
+- Risk: attach reports no version or logs (an unowned process); the first-run telemetry modal cannot be dismissed without a choice by design; `telemetry` files under `~/.aws/emulator/telemetry` appeared during probes and their cause was not traced.
 
 ## Phase 2: Session and SDK access
 
@@ -177,7 +192,7 @@ Deferred by ASB-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 | GNU target unsupported by Tauri | Phase 0 blocked on that machine | Phase 0 gate, `cargo-xwin` fallback |
 | SDK crypto stack needs C tools | Phase 0 blocked | `rustls-ring` feature |
 | WSL port forwarding off | No endpoint from Windows | Phase 1 gate |
-| Idle memory over limit | Exit 137, state lost | Measure in Phase 1 |
+| Idle memory over limit | Exit 137, state lost | Idle measured at 180 MiB, default `2g` (ASB-Q6) |
 | Region semantics unknown | Wrong region selector behavior | Phase 2 task 5 |
 | Upstream release velocity | Stale capability claims | ASB-D13 drift tool |
 | Running version differs from pin | Wrong gating | ASB-D14 banner, ASB-D18 |
@@ -185,4 +200,4 @@ Deferred by ASB-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 
 ## Next action
 
-Phase 0 task 10: after the user approves, commit the scaffold, profiles, tools, hook and CI skeleton as one commit (ASB-D16). The Phase 0 acceptance line "Same scaffold builds on a Windows runner in CI" stays open until the user pushes and the Windows job has run; Phase 1 does not start before that result is recorded.
+Phase 1 is implemented and waits for the user to approve it and to answer ASB-Q6 and ASB-Q7. Then push so CI builds the new code, and start Phase 2 task 1 (load keys, CA and config from `~/.aws/emulator/<port>/`).
