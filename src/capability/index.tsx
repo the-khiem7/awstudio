@@ -91,6 +91,12 @@ export function variantUnsupported(op: OpCapability, variant: string): boolean {
   });
 }
 
+/**
+ * Partly supported (yellow) operations that a page's main flow needs and that the owner enabled;
+ * every other yellow operation stays disabled. Each worked when called against the emulator.
+ */
+const ENABLED_YELLOW: ReadonlySet<string> = new Set(["iam:CreateAccessKey", "lambda:UpdateFunctionConfiguration"]);
+
 /** Pure form of {@link useCapability}, for lists that judge many operations at once. */
 export function judge(
   matrix: CapabilityMatrix | null,
@@ -115,6 +121,7 @@ export function judge(
     case "green":
       return { tier: "green", enabled: true, reason: "", pass: op.pass };
     case "yellow":
+      if (ENABLED_YELLOW.has(id)) return { tier: "yellow", enabled: true, reason: "", pass: op.pass };
       return {
         tier: "yellow",
         enabled: false,
@@ -135,8 +142,9 @@ export function judge(
 }
 
 /**
- * Whether a control bound to `service:Operation` may call the backend. Green is functional; yellow,
- * red, a listed unsupported variant, or a 501 seen in this run disable the control with a reason.
+ * Whether a control bound to `service:Operation` may call the backend. Green is functional; yellow
+ * (except the enabled ones above), red, a listed unsupported variant, or a 501 seen in this run
+ * disable the control with a reason.
  */
 export function useCapability(id: string, variant?: string): Capability {
   const { matrix, runtime501 } = useCapabilityContext();
