@@ -6,7 +6,7 @@ AWStudio is an independent project. It is not affiliated with, endorsed by, or s
 
 ## Status
 
-The Runtime page starts, stops and restarts the emulator through Docker, a binary inside WSL, or an emulator that is already running, and shows its health and logs. Its SDK access panel tests the connection with `sts:GetCallerIdentity` and `s3:ListBuckets`, shows PowerShell and Command Prompt lines that point the AWS CLI and SDKs at the emulator, and opens a PowerShell window with that environment. No console pages exist yet. Windows with Docker is the first target; Linux is deferred.
+The Runtime page starts, stops and restarts the emulator through Docker, a binary inside WSL, or an emulator that is already running, and shows its health and logs. Its SDK access panel tests the connection with `sts:GetCallerIdentity` and `s3:ListBuckets`, shows PowerShell and Command Prompt lines that point the AWS CLI and SDKs at the emulator, and opens a PowerShell window with that environment. Console pages exist for S3, DynamoDB, SQS, SNS, IAM and Lambda; every other service shows a landing page that lists what the emulator supports. Windows with Docker is the first target; Linux is deferred.
 
 The backend signs with the keys each emulator run writes, trusts only that run's CA inside the app, and refuses to send a request to any host other than `https://127.0.0.1:<port>`. The exported environment names the emulator's own files rather than the key values and clears `AWS_PROFILE`, `AWS_ACCESS_KEY_ID` and the other variables that could select real AWS credentials.
 
