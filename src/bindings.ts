@@ -35,13 +35,133 @@ export const commands = {
 	envBlock: (shell: Shell, options?: InvokeOptions) => __TAURI_INVOKE<string>("env_block", { shell }, options),
 	/**  Opens a PowerShell window with the emulator environment. */
 	openTerminal: (options?: InvokeOptions) => __TAURI_INVOKE<null>("open_terminal", undefined, options),
+	s3ListBuckets: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<S3Bucket_Serialize[]>("s3_list_buckets", { region }, options),
+	/**
+	 *  Creates a bucket in `region`, then applies the options the create page offers. A failure after
+	 *  the bucket exists names the step that failed; the bucket is kept, as the console does.
+	 */
+	s3CreateBucket: (region: string, input: CreateBucketInput, options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_create_bucket", { region, input }, options),
+	s3DeleteBucket: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_delete_bucket", { region, bucket }, options),
+	/**  Deletes every object version and delete marker in a bucket: the console's "Empty bucket". */
+	s3EmptyBucket: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<DeleteResult>("s3_empty_bucket", { region, bucket }, options),
+	s3GetBucketLocation: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<string>("s3_get_bucket_location", { region, bucket }, options),
+	/**  `Enabled`, `Suspended`, or `Disabled` for a bucket that was never versioned. */
+	s3GetBucketVersioning: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<string>("s3_get_bucket_versioning", { region, bucket }, options),
+	s3PutBucketVersioning: (region: string, bucket: string, enabled: boolean, options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_put_bucket_versioning", { region, bucket, enabled }, options),
+	s3GetBucketTagging: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("s3_get_bucket_tagging", { region, bucket }, options),
+	/**  Replaces the bucket's tag set; an empty set deletes it. */
+	s3PutBucketTagging: (region: string, bucket: string, tags: Tag[], options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_put_bucket_tagging", { region, bucket, tags }, options),
+	/**  The bucket policy document, or none. */
+	s3GetBucketPolicy: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<string | null>("s3_get_bucket_policy", { region, bucket }, options),
+	/**  Writes the policy; an empty document deletes it. */
+	s3PutBucketPolicy: (region: string, bucket: string, policy: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_put_bucket_policy", { region, bucket, policy }, options),
+	/**  The CORS rules as the console's editor shows them: a JSON array in the S3 API's field names. */
+	s3GetBucketCors: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<string | null>("s3_get_bucket_cors", { region, bucket }, options),
+	/**  Writes the CORS rules from the editor's JSON array; an empty text deletes them. */
+	s3PutBucketCors: (region: string, bucket: string, rules: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_put_bucket_cors", { region, bucket, rules }, options),
+	/**  Block Public Access settings; a bucket without the configuration has every setting off. */
+	s3GetPublicAccessBlock: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<PublicAccessBlock>("s3_get_public_access_block", { region, bucket }, options),
+	s3PutPublicAccessBlock: (region: string, bucket: string, settings: PublicAccessBlock, options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_put_public_access_block", { region, bucket, settings }, options),
+	s3GetBucketLifecycle: (region: string, bucket: string, options?: InvokeOptions) => __TAURI_INVOKE<LifecycleRuleInput_Serialize[]>("s3_get_bucket_lifecycle", { region, bucket }, options),
+	/**  Replaces every lifecycle rule; an empty list deletes the configuration. */
+	s3PutBucketLifecycle: (region: string, bucket: string, rules: LifecycleRuleInput_Deserialize[], options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_put_bucket_lifecycle", { region, bucket, rules }, options),
+	/**  One page of the folders and objects directly under `prefix`. */
+	s3ListObjects: (region: string, bucket: string, prefix: string, nextToken: string | null, options?: InvokeOptions) => __TAURI_INVOKE<S3Listing_Serialize>("s3_list_objects", { region, bucket, prefix, nextToken }, options),
+	/**  Creates a folder: an empty object whose key ends with `/`. */
+	s3CreateFolder: (region: string, bucket: string, key: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_create_folder", { region, bucket, key }, options),
+	/**  Deletes objects by key, and every object under each folder prefix. */
+	s3DeleteObjects: (region: string, bucket: string, keys: string[], prefixes: string[], options?: InvokeOptions) => __TAURI_INVOKE<DeleteResult>("s3_delete_objects", { region, bucket, keys, prefixes }, options),
+	/**  Deletes one version of an object, permanently. */
+	s3DeleteObjectVersion: (region: string, bucket: string, key: string, versionId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_delete_object_version", { region, bucket, key, versionId }, options),
+	s3HeadObject: (region: string, bucket: string, key: string, versionId: string | null, options?: InvokeOptions) => __TAURI_INVOKE<S3ObjectDetails_Serialize>("s3_head_object", { region, bucket, key, versionId }, options),
+	/**  Every version and delete marker of one key, newest first. */
+	s3ListObjectVersions: (region: string, bucket: string, key: string, options?: InvokeOptions) => __TAURI_INVOKE<S3Version_Serialize[]>("s3_list_object_versions", { region, bucket, key }, options),
+	s3GetObjectTagging: (region: string, bucket: string, key: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("s3_get_object_tagging", { region, bucket, key }, options),
+	/**  Replaces the object's tag set; an empty set deletes it. */
+	s3PutObjectTagging: (region: string, bucket: string, key: string, tags: Tag[], options?: InvokeOptions) => __TAURI_INVOKE<null>("s3_put_object_tagging", { region, bucket, key, tags }, options),
+	/**
+	 *  Opens the native file picker and uploads every picked file under `prefix`, reporting progress
+	 *  per file. Returns an empty list when the picker is cancelled. One failed file does not stop the
+	 *  others; its result carries the error.
+	 */
+	s3UploadFiles: (region: string, bucket: string, prefix: string, onProgress: Channel<TransferProgress>, options?: InvokeOptions) => __TAURI_INVOKE<TransferResult_Serialize[]>("s3_upload_files", { region, bucket, prefix, onProgress }, options),
+	/**  Opens the native save dialog and downloads the object there. Returns none when cancelled. */
+	s3DownloadObject: (region: string, bucket: string, key: string, versionId: string | null, onProgress: Channel<TransferProgress>, options?: InvokeOptions) => __TAURI_INVOKE<TransferResult_Serialize | null>("s3_download_object", { region, bucket, key, versionId, onProgress }, options),
+	/**  Every table of the Region with the columns of the console's tables list. */
+	ddbListTables: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<DdbTable_Serialize[]>("ddb_list_tables", { region }, options),
+	ddbDescribeTable: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<DdbTable_Serialize>("ddb_describe_table", { region, name }, options),
+	ddbCreateTable: (region: string, input: CreateTableInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<null>("ddb_create_table", { region, input }, options),
+	ddbDeleteTable: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ddb_delete_table", { region, name }, options),
+	ddbScan: (region: string, input: ReadInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<ItemPage_Serialize>("ddb_scan", { region, input }, options),
+	ddbQuery: (region: string, input: ReadInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<ItemPage_Serialize>("ddb_query", { region, input }, options),
+	ddbGetItem: (region: string, table: string, key: unknown, options?: InvokeOptions) => __TAURI_INVOKE<unknown | null>("ddb_get_item", { region, table, key }, options),
+	/**
+	 *  Writes an item. `create` refuses to replace an item that already has this key, as the
+	 *  console's "Create item" does; without it the item is replaced.
+	 */
+	ddbPutItem: (region: string, table: string, item: unknown, createOnlyKey: string | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("ddb_put_item", { region, table, item, createOnlyKey }, options),
+	ddbDeleteItems: (region: string, table: string, keys: unknown[], options?: InvokeOptions) => __TAURI_INVOKE<number>("ddb_delete_items", { region, table, keys }, options),
+	/**  Runs one PartiQL statement; `parameters` is a DynamoDB JSON array for its `?` placeholders. */
+	ddbExecuteStatement: (region: string, statement: string, parameters: unknown | null, nextToken: string | null, options?: InvokeOptions) => __TAURI_INVOKE<StatementPage_Serialize>("ddb_execute_statement", { region, statement, parameters, nextToken }, options),
+	ddbListBackups: (region: string, table: string | null, options?: InvokeOptions) => __TAURI_INVOKE<DdbBackup_Serialize[]>("ddb_list_backups", { region, table }, options),
+	ddbCreateBackup: (region: string, table: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ddb_create_backup", { region, table, name }, options),
+	ddbDeleteBackup: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ddb_delete_backup", { region, arn }, options),
+	ddbRestoreBackup: (region: string, arn: string, target: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ddb_restore_backup", { region, arn, target }, options),
+	ddbDescribeTtl: (region: string, table: string, options?: InvokeOptions) => __TAURI_INVOKE<TimeToLive_Serialize>("ddb_describe_ttl", { region, table }, options),
+	ddbUpdateTtl: (region: string, table: string, enabled: boolean, attribute: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ddb_update_ttl", { region, table, enabled, attribute }, options),
+	ddbListTags: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("ddb_list_tags", { region, arn }, options),
+	/**  Every queue of the Region with the columns of the console's queues list. */
+	sqsListQueues: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SqsQueue_Serialize[]>("sqs_list_queues", { region }, options),
+	/**  Creates a queue and returns its URL. */
+	sqsCreateQueue: (region: string, input: CreateQueueInput, options?: InvokeOptions) => __TAURI_INVOKE<string>("sqs_create_queue", { region, input }, options),
+	sqsGetQueue: (region: string, url: string, options?: InvokeOptions) => __TAURI_INVOKE<SqsQueueDetails_Serialize>("sqs_get_queue", { region, url }, options),
+	sqsSetQueueAttributes: (region: string, url: string, attributes: { [key in string]: string }, options?: InvokeOptions) => __TAURI_INVOKE<null>("sqs_set_queue_attributes", { region, url, attributes }, options),
+	sqsDeleteQueue: (region: string, url: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("sqs_delete_queue", { region, url }, options),
+	sqsPurgeQueue: (region: string, url: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("sqs_purge_queue", { region, url }, options),
+	/**  Sends one message and returns its message id. */
+	sqsSendMessage: (region: string, url: string, input: SendMessageInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("sqs_send_message", { region, url, input }, options),
+	/**
+	 *  Polls for messages as the console's "Poll for messages" does. Received messages stay in the
+	 *  queue and become visible again after the visibility timeout unless they are deleted.
+	 */
+	sqsReceiveMessages: (region: string, url: string, maxMessages: number, waitSeconds: number, visibilityTimeout: number | null, options?: InvokeOptions) => __TAURI_INVOKE<SqsMessage_Serialize[]>("sqs_receive_messages", { region, url, maxMessages, waitSeconds, visibilityTimeout }, options),
+	sqsDeleteMessage: (region: string, url: string, receiptHandle: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("sqs_delete_message", { region, url, receiptHandle }, options),
+	sqsListTags: (region: string, url: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("sqs_list_tags", { region, url }, options),
+	/**  Sets `set` and removes `remove`, the difference the "Manage tags" page saves. */
+	sqsUpdateTags: (region: string, url: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("sqs_update_tags", { region, url, set, remove }, options),
+	/**  URLs of the queues whose redrive policy names this queue as their dead-letter queue. */
+	sqsListDeadLetterSources: (region: string, url: string, options?: InvokeOptions) => __TAURI_INVOKE<string[]>("sqs_list_dead_letter_sources", { region, url }, options),
+	snsListTopics: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SnsTopic_Serialize[]>("sns_list_topics", { region }, options),
+	/**  Creates a topic and returns its ARN. */
+	snsCreateTopic: (region: string, input: CreateTopicInput, options?: InvokeOptions) => __TAURI_INVOKE<string>("sns_create_topic", { region, input }, options),
+	snsGetTopic: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<SnsTopicDetails_Serialize>("sns_get_topic", { region, arn }, options),
+	snsSetTopicAttribute: (region: string, arn: string, name: string, value: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("sns_set_topic_attribute", { region, arn, name, value }, options),
+	snsDeleteTopic: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("sns_delete_topic", { region, arn }, options),
+	snsListSubscriptionsByTopic: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<SnsSubscription[]>("sns_list_subscriptions_by_topic", { region, arn }, options),
+	snsListSubscriptions: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SnsSubscription[]>("sns_list_subscriptions", { region }, options),
+	/**  Subscribes an endpoint and returns the subscription ARN (`pending confirmation` until confirmed). */
+	snsSubscribe: (region: string, input: SubscribeInput, options?: InvokeOptions) => __TAURI_INVOKE<string>("sns_subscribe", { region, input }, options),
+	snsUnsubscribe: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("sns_unsubscribe", { region, arn }, options),
+	snsGetSubscription: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<{ [key in string]: string }>("sns_get_subscription", { region, arn }, options),
+	snsSetSubscriptionAttribute: (region: string, arn: string, name: string, value: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("sns_set_subscription_attribute", { region, arn, name, value }, options),
+	/**  Publishes one message and returns its message id. */
+	snsPublish: (region: string, input: PublishInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("sns_publish", { region, input }, options),
+	snsListTags: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("sns_list_tags", { region, arn }, options),
+	/**  Sets `set` and removes `remove`, the difference the "Manage tags" page saves. */
+	snsUpdateTags: (region: string, arn: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("sns_update_tags", { region, arn, set, remove }, options),
 };
 
 /* Types */
-/**  Error shape of every AWS-facing command. */
+/**
+ *  Error shape of every AWS-facing command. `op` is `service:Operation` with the service key of the
+ *  capability matrix, for example `sqs:ListQueues`, so a 501 disables only that service's control.
+ */
 export type ApiError = ApiError_Serialize | ApiError_Deserialize;
 
-/**  Error shape of every AWS-facing command. */
+/**
+ *  Error shape of every AWS-facing command. `op` is `service:Operation` with the service key of the
+ *  capability matrix, for example `sqs:ListQueues`, so a 501 disables only that service's control.
+ */
 export type ApiError_Deserialize = 
 /**  The emulator answered HTTP 501: the operation, or this variant of it, is not implemented. */
 { kind: "unsupported"; op: string; variant?: string | null; version: string } | 
@@ -52,9 +172,14 @@ export type ApiError_Deserialize =
 /**  The endpoint guard refused to send the request. */
 { kind: "guard"; op: string; detail: string } | 
 /**  The request did not get an answer: connection, TLS, timeout. */
-{ kind: "transport"; op: string; detail: string };
+{ kind: "transport"; op: string; detail: string } | 
+/**  The command's input was rejected before any request was built, or a local file failed. */
+{ kind: "invalid"; detail: string };
 
-/**  Error shape of every AWS-facing command. */
+/**
+ *  Error shape of every AWS-facing command. `op` is `service:Operation` with the service key of the
+ *  capability matrix, for example `sqs:ListQueues`, so a 501 disables only that service's control.
+ */
 export type ApiError_Serialize = 
 /**  The emulator answered HTTP 501: the operation, or this variant of it, is not implemented. */
 { kind: "unsupported"; op: string; variant: string | null; version: string } | 
@@ -65,7 +190,168 @@ export type ApiError_Serialize =
 /**  The endpoint guard refused to send the request. */
 { kind: "guard"; op: string; detail: string } | 
 /**  The request did not get an answer: connection, TLS, timeout. */
-{ kind: "transport"; op: string; detail: string };
+{ kind: "transport"; op: string; detail: string } | 
+/**  The command's input was rejected before any request was built, or a local file failed. */
+{ kind: "invalid"; detail: string };
+
+export type CreateBucketInput = {
+	name: string,
+	versioning: boolean,
+	object_lock: boolean,
+	public_access_block: PublicAccessBlock,
+	tags: Tag[],
+};
+
+export type CreateIndexInput = CreateIndexInput_Serialize | CreateIndexInput_Deserialize;
+
+export type CreateIndexInput_Deserialize = {
+	name: string,
+	partition_key: KeyAttribute,
+	sort_key?: KeyAttribute | null,
+	/**  `ALL` or `KEYS_ONLY`. */
+	projection: string,
+};
+
+export type CreateIndexInput_Serialize = {
+	name: string,
+	partition_key: KeyAttribute,
+	sort_key: KeyAttribute | null,
+	/**  `ALL` or `KEYS_ONLY`. */
+	projection: string,
+};
+
+export type CreateQueueInput = {
+	name: string,
+	/**  Queue attributes by their API names (`VisibilityTimeout`, `FifoQueue`, `RedrivePolicy`). */
+	attributes: { [key in string]: string },
+	tags: Tag[],
+};
+
+export type CreateTableInput = CreateTableInput_Serialize | CreateTableInput_Deserialize;
+
+export type CreateTableInput_Deserialize = {
+	name: string,
+	partition_key: KeyAttribute,
+	sort_key?: KeyAttribute | null,
+	/**  `PAY_PER_REQUEST` or `PROVISIONED`. */
+	billing_mode: string,
+	read_capacity: number,
+	write_capacity: number,
+	global_indexes: CreateIndexInput_Deserialize[],
+	deletion_protection: boolean,
+	tags: Tag[],
+};
+
+export type CreateTableInput_Serialize = {
+	name: string,
+	partition_key: KeyAttribute,
+	sort_key: KeyAttribute | null,
+	/**  `PAY_PER_REQUEST` or `PROVISIONED`. */
+	billing_mode: string,
+	read_capacity: number,
+	write_capacity: number,
+	global_indexes: CreateIndexInput_Serialize[],
+	deletion_protection: boolean,
+	tags: Tag[],
+};
+
+export type CreateTopicInput = {
+	name: string,
+	/**  Topic attributes by their API names (`FifoTopic`, `DisplayName`, `Policy`). */
+	attributes: { [key in string]: string },
+	tags: Tag[],
+};
+
+export type DdbBackup = DdbBackup_Serialize | DdbBackup_Deserialize;
+
+export type DdbBackup_Deserialize = {
+	arn: string,
+	name: string,
+	table: string,
+	status?: string | null,
+	kind?: string | null,
+	created?: string | null,
+	size_bytes: number | null,
+};
+
+export type DdbBackup_Serialize = {
+	arn: string,
+	name: string,
+	table: string,
+	status: string | null,
+	kind: string | null,
+	created: string | null,
+	size_bytes: number | null,
+};
+
+export type DdbIndex = DdbIndex_Serialize | DdbIndex_Deserialize;
+
+export type DdbIndex_Deserialize = {
+	name: string,
+	status?: string | null,
+	partition_key?: KeyAttribute | null,
+	sort_key?: KeyAttribute | null,
+	projection?: string | null,
+	item_count: number | null,
+	size_bytes: number | null,
+};
+
+export type DdbIndex_Serialize = {
+	name: string,
+	status: string | null,
+	partition_key: KeyAttribute | null,
+	sort_key: KeyAttribute | null,
+	projection: string | null,
+	item_count: number | null,
+	size_bytes: number | null,
+};
+
+export type DdbTable = DdbTable_Serialize | DdbTable_Deserialize;
+
+export type DdbTable_Deserialize = {
+	name: string,
+	arn?: string | null,
+	status?: string | null,
+	created?: string | null,
+	partition_key?: KeyAttribute | null,
+	sort_key?: KeyAttribute | null,
+	/**  `PAY_PER_REQUEST` or `PROVISIONED`. */
+	billing_mode: string,
+	read_capacity: number | null,
+	write_capacity: number | null,
+	item_count: number | null,
+	size_bytes: number | null,
+	table_class?: string | null,
+	deletion_protection: boolean,
+	stream?: string | null,
+	global_indexes: DdbIndex_Deserialize[],
+	local_indexes: DdbIndex_Deserialize[],
+};
+
+export type DdbTable_Serialize = {
+	name: string,
+	arn: string | null,
+	status: string | null,
+	created: string | null,
+	partition_key: KeyAttribute | null,
+	sort_key: KeyAttribute | null,
+	/**  `PAY_PER_REQUEST` or `PROVISIONED`. */
+	billing_mode: string,
+	read_capacity: number | null,
+	write_capacity: number | null,
+	item_count: number | null,
+	size_bytes: number | null,
+	table_class: string | null,
+	deletion_protection: boolean,
+	stream: string | null,
+	global_indexes: DdbIndex_Serialize[],
+	local_indexes: DdbIndex_Serialize[],
+};
+
+export type DeleteResult = {
+	deleted: number,
+	errors: string[],
+};
 
 /**  Where the SDK-facing files of one emulator run live. The key filename is one constant. */
 export type Endpoint = {
@@ -75,10 +361,62 @@ export type Endpoint = {
 
 export type Health = "healthy" | "unhealthy" | "unknown";
 
+export type ItemPage = ItemPage_Serialize | ItemPage_Deserialize;
+
+export type ItemPage_Deserialize = {
+	items: unknown[],
+	last_key?: unknown | null,
+	count: number,
+	scanned_count: number,
+};
+
+export type ItemPage_Serialize = {
+	items: unknown[],
+	last_key: unknown | null,
+	count: number,
+	scanned_count: number,
+};
+
+export type KeyAttribute = {
+	name: string,
+	/**  `S`, `N` or `B`. */
+	kind: string,
+};
+
+/**  The console's simplified lifecycle rule: a prefix filter and up to three day counts. */
+export type LifecycleRuleInput = LifecycleRuleInput_Serialize | LifecycleRuleInput_Deserialize;
+
+/**  The console's simplified lifecycle rule: a prefix filter and up to three day counts. */
+export type LifecycleRuleInput_Deserialize = {
+	id: string,
+	enabled: boolean,
+	prefix: string,
+	expiration_days?: number | null,
+	noncurrent_expiration_days?: number | null,
+	abort_multipart_days?: number | null,
+};
+
+/**  The console's simplified lifecycle rule: a prefix filter and up to three day counts. */
+export type LifecycleRuleInput_Serialize = {
+	id: string,
+	enabled: boolean,
+	prefix: string,
+	expiration_days: number | null,
+	noncurrent_expiration_days: number | null,
+	abort_multipart_days: number | null,
+};
+
 export type LogLine = {
 	level: string,
 	message: string,
 	raw: string,
+};
+
+/**  A message attribute: `String`, `Number` or `Binary` (base64 text), as the console's form has them. */
+export type MessageAttribute = {
+	name: string,
+	data_type: string,
+	value: string,
 };
 
 export type ProviderError = 
@@ -87,7 +425,185 @@ export type ProviderError =
 
 export type ProviderKind = "docker" | "native" | "attach";
 
+export type PublicAccessBlock = {
+	block_public_acls: boolean,
+	ignore_public_acls: boolean,
+	block_public_policy: boolean,
+	restrict_public_buckets: boolean,
+};
+
+export type PublishInput = PublishInput_Serialize | PublishInput_Deserialize;
+
+export type PublishInput_Deserialize = {
+	topic_arn: string,
+	subject?: string | null,
+	message: string,
+	/**  True when `message` is a JSON object with one message per protocol. */
+	per_protocol: boolean,
+	group_id?: string | null,
+	deduplication_id?: string | null,
+	attributes: MessageAttribute[],
+};
+
+export type PublishInput_Serialize = {
+	topic_arn: string,
+	subject: string | null,
+	message: string,
+	/**  True when `message` is a JSON object with one message per protocol. */
+	per_protocol: boolean,
+	group_id: string | null,
+	deduplication_id: string | null,
+	attributes: MessageAttribute[],
+};
+
+export type ReadInput = ReadInput_Serialize | ReadInput_Deserialize;
+
+export type ReadInput_Deserialize = {
+	table: string,
+	index?: string | null,
+	/**  Query only: the key condition. A read without one is a Scan. */
+	key_condition?: string | null,
+	filter?: string | null,
+	names: { [key in string]: string },
+	/**  DynamoDB JSON map of every `:value` the condition and filter use. */
+	values: unknown,
+	limit?: number | null,
+	forward: boolean,
+	start_key?: unknown | null,
+};
+
+export type ReadInput_Serialize = {
+	table: string,
+	index: string | null,
+	/**  Query only: the key condition. A read without one is a Scan. */
+	key_condition: string | null,
+	filter: string | null,
+	names: { [key in string]: string },
+	/**  DynamoDB JSON map of every `:value` the condition and filter use. */
+	values: unknown,
+	limit: number | null,
+	forward: boolean,
+	start_key: unknown | null,
+};
+
 export type RunState = "stopped" | "running";
+
+export type S3Bucket = S3Bucket_Serialize | S3Bucket_Deserialize;
+
+export type S3Bucket_Deserialize = {
+	name: string,
+	creation_date?: string | null,
+	region?: string | null,
+};
+
+export type S3Bucket_Serialize = {
+	name: string,
+	creation_date: string | null,
+	region: string | null,
+};
+
+/**  One level of a bucket: the folders (common prefixes) and objects directly under `prefix`. */
+export type S3Listing = S3Listing_Serialize | S3Listing_Deserialize;
+
+/**  One level of a bucket: the folders (common prefixes) and objects directly under `prefix`. */
+export type S3Listing_Deserialize = {
+	prefix: string,
+	folders: string[],
+	objects: S3Object_Deserialize[],
+	/**  Set when more keys exist; pass it back to read the next page. */
+	next_token?: string | null,
+};
+
+/**  One level of a bucket: the folders (common prefixes) and objects directly under `prefix`. */
+export type S3Listing_Serialize = {
+	prefix: string,
+	folders: string[],
+	objects: S3Object_Serialize[],
+	/**  Set when more keys exist; pass it back to read the next page. */
+	next_token: string | null,
+};
+
+export type S3Object = S3Object_Serialize | S3Object_Deserialize;
+
+export type S3ObjectDetails = S3ObjectDetails_Serialize | S3ObjectDetails_Deserialize;
+
+export type S3ObjectDetails_Deserialize = {
+	key: string,
+	size: number | null,
+	last_modified?: string | null,
+	etag?: string | null,
+	content_type?: string | null,
+	storage_class?: string | null,
+	version_id?: string | null,
+	server_side_encryption?: string | null,
+	metadata: Tag[],
+};
+
+export type S3ObjectDetails_Serialize = {
+	key: string,
+	size: number | null,
+	last_modified: string | null,
+	etag: string | null,
+	content_type: string | null,
+	storage_class: string | null,
+	version_id: string | null,
+	server_side_encryption: string | null,
+	metadata: Tag[],
+};
+
+export type S3Object_Deserialize = {
+	key: string,
+	size: number | null,
+	last_modified?: string | null,
+	storage_class?: string | null,
+	etag?: string | null,
+};
+
+export type S3Object_Serialize = {
+	key: string,
+	size: number | null,
+	last_modified: string | null,
+	storage_class: string | null,
+	etag: string | null,
+};
+
+export type S3Version = S3Version_Serialize | S3Version_Deserialize;
+
+export type S3Version_Deserialize = {
+	key: string,
+	version_id: string,
+	is_latest: boolean,
+	delete_marker: boolean,
+	size: number | null,
+	last_modified?: string | null,
+};
+
+export type S3Version_Serialize = {
+	key: string,
+	version_id: string,
+	is_latest: boolean,
+	delete_marker: boolean,
+	size: number | null,
+	last_modified: string | null,
+};
+
+export type SendMessageInput = SendMessageInput_Serialize | SendMessageInput_Deserialize;
+
+export type SendMessageInput_Deserialize = {
+	body: string,
+	delay_seconds?: number | null,
+	group_id?: string | null,
+	deduplication_id?: string | null,
+	attributes: MessageAttribute[],
+};
+
+export type SendMessageInput_Serialize = {
+	body: string,
+	delay_seconds: number | null,
+	group_id: string | null,
+	deduplication_id: string | null,
+	attributes: MessageAttribute[],
+};
 
 /**
  *  Result of the two calls that prove the backend can reach the running emulator with this run's
@@ -143,6 +659,132 @@ export type Settings_Serialize = {
 
 export type Shell = "powershell" | "cmd";
 
+export type SnsSubscription = {
+	arn: string,
+	topic_arn: string,
+	protocol: string,
+	endpoint: string,
+	/**  `Confirmed` or `Pending confirmation`, from the ARN as the console reads it. */
+	status: string,
+};
+
+export type SnsTopic = SnsTopic_Serialize | SnsTopic_Deserialize;
+
+export type SnsTopicDetails = SnsTopicDetails_Serialize | SnsTopicDetails_Deserialize;
+
+export type SnsTopicDetails_Deserialize = {
+	topic: SnsTopic_Deserialize,
+	attributes: { [key in string]: string },
+};
+
+export type SnsTopicDetails_Serialize = {
+	topic: SnsTopic_Serialize,
+	attributes: { [key in string]: string },
+};
+
+export type SnsTopic_Deserialize = {
+	arn: string,
+	name: string,
+	fifo: boolean,
+	display_name?: string | null,
+	subscriptions_confirmed: number | null,
+	subscriptions_pending: number | null,
+};
+
+export type SnsTopic_Serialize = {
+	arn: string,
+	name: string,
+	fifo: boolean,
+	display_name: string | null,
+	subscriptions_confirmed: number | null,
+	subscriptions_pending: number | null,
+};
+
+export type SqsMessage = SqsMessage_Serialize | SqsMessage_Deserialize;
+
+export type SqsMessage_Deserialize = {
+	message_id: string,
+	receipt_handle: string,
+	body: string,
+	md5_of_body?: string | null,
+	sent?: string | null,
+	first_received?: string | null,
+	receive_count: number | null,
+	group_id?: string | null,
+	deduplication_id?: string | null,
+	attributes: MessageAttribute[],
+};
+
+export type SqsMessage_Serialize = {
+	message_id: string,
+	receipt_handle: string,
+	body: string,
+	md5_of_body: string | null,
+	sent: string | null,
+	first_received: string | null,
+	receive_count: number | null,
+	group_id: string | null,
+	deduplication_id: string | null,
+	attributes: MessageAttribute[],
+};
+
+export type SqsQueue = SqsQueue_Serialize | SqsQueue_Deserialize;
+
+/**  Every attribute of one queue by its API name, plus the summary the details page shows. */
+export type SqsQueueDetails = SqsQueueDetails_Serialize | SqsQueueDetails_Deserialize;
+
+/**  Every attribute of one queue by its API name, plus the summary the details page shows. */
+export type SqsQueueDetails_Deserialize = {
+	queue: SqsQueue_Deserialize,
+	attributes: { [key in string]: string },
+};
+
+/**  Every attribute of one queue by its API name, plus the summary the details page shows. */
+export type SqsQueueDetails_Serialize = {
+	queue: SqsQueue_Serialize,
+	attributes: { [key in string]: string },
+};
+
+export type SqsQueue_Deserialize = {
+	url: string,
+	name: string,
+	arn?: string | null,
+	fifo: boolean,
+	created?: string | null,
+	messages_available: number | null,
+	messages_in_flight: number | null,
+	messages_delayed: number | null,
+	/**  `SSE-SQS`, `SSE-KMS`, or none. */
+	encryption?: string | null,
+	content_based_deduplication: boolean,
+};
+
+export type SqsQueue_Serialize = {
+	url: string,
+	name: string,
+	arn: string | null,
+	fifo: boolean,
+	created: string | null,
+	messages_available: number | null,
+	messages_in_flight: number | null,
+	messages_delayed: number | null,
+	/**  `SSE-SQS`, `SSE-KMS`, or none. */
+	encryption: string | null,
+	content_based_deduplication: boolean,
+};
+
+export type StatementPage = StatementPage_Serialize | StatementPage_Deserialize;
+
+export type StatementPage_Deserialize = {
+	items: unknown[],
+	next_token?: string | null,
+};
+
+export type StatementPage_Serialize = {
+	items: unknown[],
+	next_token: string | null,
+};
+
 export type Status = Status_Serialize | Status_Deserialize;
 
 export type Status_Deserialize = {
@@ -161,6 +803,56 @@ export type Status_Serialize = {
 	/**  True while a start, stop, restart or build holds the provider. */
 	busy: boolean,
 	endpoint: Endpoint | null,
+};
+
+export type SubscribeInput = {
+	topic_arn: string,
+	protocol: string,
+	endpoint: string,
+	/**  Subscription attributes by their API names (`FilterPolicy`, `RawMessageDelivery`). */
+	attributes: { [key in string]: string },
+};
+
+/**  A resource tag as every service page shows it. */
+export type Tag = {
+	key: string,
+	value: string,
+};
+
+export type TimeToLive = TimeToLive_Serialize | TimeToLive_Deserialize;
+
+export type TimeToLive_Deserialize = {
+	status: string,
+	attribute?: string | null,
+};
+
+export type TimeToLive_Serialize = {
+	status: string,
+	attribute: string | null,
+};
+
+export type TransferProgress = {
+	key: string,
+	transferred: number | null,
+	total: number | null,
+};
+
+export type TransferResult = TransferResult_Serialize | TransferResult_Deserialize;
+
+export type TransferResult_Deserialize = {
+	key: string,
+	size: number | null,
+	/**  Local file the object came from or went to. */
+	path: string,
+	error?: string | null,
+};
+
+export type TransferResult_Serialize = {
+	key: string,
+	size: number | null,
+	/**  Local file the object came from or went to. */
+	path: string,
+	error: string | null,
 };
 
 export type VersionCheck = {

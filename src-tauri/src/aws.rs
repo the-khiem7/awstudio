@@ -121,18 +121,62 @@ impl Clients {
         aws_sdk_sts::Client::from_conf(conf)
     }
 
+    /// S3 client in the session's own Region.
+    pub fn s3(&self) -> aws_sdk_s3::Client {
+        Self::s3_client(&self.config, &self.guard)
+    }
+
+    /// The shared config with the Region the console's region selector chose. The emulator keeps
+    /// a separate state per Region, so the Region decides which resources a call sees.
+    fn regional(&self, region: &str) -> Result<SdkConfig, ApiError> {
+        if !is_region_code(region) {
+            return Err(ApiError::Invalid { detail: format!("{region:?} is not a Region code") });
+        }
+        Ok(self.config.to_builder().region(Region::new(region.to_string())).build())
+    }
+
     /// Path-style addressing: a virtual-hosted bucket name in front of an IP address is not a
     /// valid host, and the guard would refuse it.
-    pub fn s3(&self) -> aws_sdk_s3::Client {
-        let conf = aws_sdk_s3::config::Builder::from(&self.config)
+    fn s3_client(config: &SdkConfig, guard: &EndpointGuard) -> aws_sdk_s3::Client {
+        let conf = aws_sdk_s3::config::Builder::from(config)
             .force_path_style(true)
-            .interceptor(self.guard.clone())
+            .interceptor(guard.clone())
             .build();
         aws_sdk_s3::Client::from_conf(conf)
     }
+
+    pub fn s3_in(&self, region: &str) -> Result<aws_sdk_s3::Client, ApiError> {
+        Ok(Self::s3_client(&self.regional(region)?, &self.guard))
+    }
+
+    pub fn dynamodb_in(&self, region: &str) -> Result<aws_sdk_dynamodb::Client, ApiError> {
+        let conf = aws_sdk_dynamodb::config::Builder::from(&self.regional(region)?).interceptor(self.guard.clone()).build();
+        Ok(aws_sdk_dynamodb::Client::from_conf(conf))
+    }
+
+    pub fn sqs_in(&self, region: &str) -> Result<aws_sdk_sqs::Client, ApiError> {
+        let conf = aws_sdk_sqs::config::Builder::from(&self.regional(region)?).interceptor(self.guard.clone()).build();
+        Ok(aws_sdk_sqs::Client::from_conf(conf))
+    }
+
+    pub fn sns_in(&self, region: &str) -> Result<aws_sdk_sns::Client, ApiError> {
+        let conf = aws_sdk_sns::config::Builder::from(&self.regional(region)?).interceptor(self.guard.clone()).build();
+        Ok(aws_sdk_sns::Client::from_conf(conf))
+    }
 }
 
-/// Error shape of every AWS-facing command.
+/// `us-east-1`, `ap-southeast-2`: lowercase words joined by hyphens, ending in a number.
+pub fn is_region_code(s: &str) -> bool {
+    let parts: Vec<&str> = s.split('-').collect();
+    parts.len() >= 3
+        && parts.len() <= 4
+        && parts[..parts.len() - 1].iter().all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_lowercase()))
+        && parts[parts.len() - 1].len() <= 2
+        && parts[parts.len() - 1].bytes().all(|b| b.is_ascii_digit())
+}
+
+/// Error shape of every AWS-facing command. `op` is `service:Operation` with the service key of the
+/// capability matrix, for example `sqs:ListQueues`, so a 501 disables only that service's control.
 #[derive(Debug, Clone, Serialize, Type, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ApiError {
@@ -146,6 +190,8 @@ pub enum ApiError {
     Guard { op: String, detail: String },
     /// The request did not get an answer: connection, TLS, timeout.
     Transport { op: String, detail: String },
+    /// The command's input was rejected before any request was built, or a local file failed.
+    Invalid { detail: String },
 }
 
 impl std::fmt::Display for ApiError {
@@ -156,7 +202,7 @@ impl std::fmt::Display for ApiError {
                 None => write!(f, "{op} is not supported by AWS Emulator v{version}"),
             },
             ApiError::Aws { op, code, message, .. } => write!(f, "{op}: {code}: {message}"),
-            ApiError::Session { detail } => f.write_str(detail),
+            ApiError::Session { detail } | ApiError::Invalid { detail } => f.write_str(detail),
             ApiError::Guard { op, detail } | ApiError::Transport { op, detail } => write!(f, "{op}: {detail}"),
         }
     }
@@ -271,8 +317,28 @@ mod tests {
         assert!(matches!(mapped, ApiError::Guard { .. }), "{mapped:?}");
     }
 
+    #[test]
+    fn region_codes_are_checked() {
+        for ok in ["us-east-1", "eu-west-1", "ap-southeast-2", "us-gov-west-1"] {
+            assert!(is_region_code(ok), "{ok}");
+        }
+        for bad in ["", "us-east", "US-EAST-1", "us-east-1a", "us--1", "us-east-1/../x", "a-b-c-d-1"] {
+            assert!(!is_region_code(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn a_region_that_is_not_a_code_is_refused_before_any_request() {
+        let clients = Clients::new(test_session("https://127.0.0.1:9297")).unwrap();
+        assert!(matches!(clients.sqs_in("eu-west-1"), Ok(_)));
+        assert!(matches!(clients.sqs_in("not a region"), Err(ApiError::Invalid { .. })));
+    }
+
     fn test_session(endpoint_url: &str) -> Session {
-        let dir = std::env::temp_dir().join(format!("awstudio-guard-{}", std::process::id()));
+        // One folder per call: tests run in parallel and each removes its folder when done.
+        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("awstudio-guard-{}-{n}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join(crate::provider::CA_FILE), TEST_CA).unwrap();
         std::fs::write(

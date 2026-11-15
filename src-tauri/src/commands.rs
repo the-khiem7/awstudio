@@ -123,7 +123,7 @@ impl From<ProviderError> for ApiError {
     }
 }
 
-async fn blocking<T, E, F>(state: &State<'_, AppState>, f: F) -> Result<T, E>
+pub(crate) async fn blocking<T, E, F>(state: &State<'_, AppState>, f: F) -> Result<T, E>
 where
     T: Send + 'static,
     E: From<ProviderError> + Send + 'static,
@@ -136,6 +136,11 @@ where
     })
     .await
     .map_err(|e| ProviderError::Tool(e.to_string()))?
+}
+
+/// SDK clients of the current run, for the service commands.
+pub(crate) async fn clients(state: &State<'_, AppState>) -> Result<Clients, ApiError> {
+    blocking(state, |rt| rt.clients()).await
 }
 
 #[tauri::command]
