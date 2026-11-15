@@ -10,6 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@cloudscape-design/board-components": "3.0.247",
     "@cloudscape-design/collection-hooks": "1.0.111",
     "@cloudscape-design/components": "3.0.1413",
     "@cloudscape-design/global-styles": "1.0.72",
