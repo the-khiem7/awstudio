@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "roadmap"
 status: "active"
 updated: "2026-11-15"
-code_ref: "uncommitted"
+code_ref: "52fe16d"
 ---
 
 # awstudio - roadmap
@@ -16,7 +16,7 @@ code_ref: "uncommitted"
 | Phase 0 | Foundation and toolchain gate | complete | - |
 | Phase 1 | Runtime providers | complete | Phase 0 |
 | Phase 2 | Session and SDK access | complete | Phase 1 |
-| Phase 3 | Console shell and capability matrix | planned | Phase 2 |
+| Phase 3 | Console shell and capability matrix | in progress | Phase 2 |
 | Phase 4 | Services wave 1: S3, DynamoDB, SQS, SNS | planned | Phase 3 |
 | Phase 5 | Services wave 2: IAM, Lambda | planned | Phase 4 |
 | Phase 6 | Services wave 3: Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge | planned | Phase 5 |
@@ -148,6 +148,20 @@ Acceptance:
 - A UI-only page shows the empty table, the "Not supported by AWS Emulator vX" banner and disabled actions.
 - A green control calls the backend; a red control is disabled with its reason.
 
+Checkpoint (tasks 1 to 7 implemented, committed in `11a6413`, `dc3cb58`, `147ba03`, `689a5fd`, `cacf9d5`, `76256ab`, `b53d859`, `52fe16d`; phase not closed):
+
+| Acceptance | State |
+|---|---|
+| UI-only page: empty table, banner, disabled actions | verified on the dev-only pattern gallery (`#/dev/patterns/gating`, fixture rows, primary op `ssm:DescribeMaintenanceWindows`): empty state only, banner "Not supported by AWS Emulator v1.0.382", Delete and Create disabled with "This page is view-only: ..."; no service page exists yet (ASD-Q10) |
+| Green control calls the backend; red control disabled with reason | verified in the same gallery with a running Docker emulator: `sts:GetCallerIdentity` button answered account `000000000000`; `ssm:DescribeMaintenanceWindows` disabled with "... is not implemented in AWS Emulator v1.0.382 (HTTP 501)"; yellow `s3:GetObjectAttributes` and `lambda:UpdateFunctionCode` with `PublishTo` disabled |
+
+- Tasks: 1 `tools/capability-gen/capability_gen.py` writes `src/capability/capability.json` (436 services, 19451 operations, key = SDK id slug, ASD-Q8; every modeled service, ASD-Q9); 2 `useCapability`, `judge`, `reportUnsupported`, run-scoped 501 cache reset by `runId` of the app-wide `RuntimeStatusProvider`; 3 shell under `src/shell/` (TopNavigation with `LOCAL` logo badge, service search with Alt+S, Services menu, Emulator status button, Region menu, account menu, `ConsolePage` with breadcrumbs, Flashbar, help panel, split panel slot, Unified Settings page); 4 Console Home board (Recently visited, Emulator health, Emulator fidelity); 5 Emulator page wrapping `Runtime` with Version and Telemetry fields, telemetry notice and version-mismatch notice moved to the shell; 6 13 patterns under `src/patterns/`; 7 hash routes `#/`, `#/emulator`, `#/settings`, a support landing page per console service path, `#/dev/patterns/<pattern>` in dev builds only.
+- Evidence: `uv run tools/capability-gen/capability_gen.py --summary` twice, byte-identical output; `npm run build` passed (capability chunk 1176.54 kB, no gallery chunk in the release build); dev app (`scripts/dev.ps1`) driven over WebView2 remote debugging: every route and all 13 gallery pages rendered with no exception, Start reached running in 9 s, version 1.0.382 matched the pin, Unified Settings dark and compact applied and persisted.
+- Defect, open: the unsaved-changes guard (`useUnsavedChanges`) does not hold a hash change on a dirty create form; repro: `#/dev/patterns/create`, type a name, set `location.hash = "#/"`; the route changes to Console Home and no Leave page modal shows, although the capture-phase `hashchange` listener is registered. Cause not found.
+- Not verified: the run-time 501 cache (no backend command reaches a 501 operation); Region menu selection; service search; the version-mismatch notice; inline edit submit, comparison split panel with a selection, wizard steps, delete consent, tag saving, S3 picker modal, board drag and resize; the release build window; Windows CI of this code.
+- Risk: backend errors name the bare operation (`GetCallerIdentity`), so a cached 501 also disables same-named operations of other services; Phase 4 commands should report `service:Operation`. The selected Region is frontend state only until service commands take a Region. Unified settings live in WebView localStorage, not `settings.json`. CommitKit's scan flags `tokenType` in the property-filter operator list as a credential (false positive).
+- Changed files: `.gitignore`, `package.json`, `package-lock.json` (`@cloudscape-design/board-components` `3.0.247`), `tools/capability-gen/capability_gen.py`, `src/capability/` (`capability.json`, `types.ts`, `index.tsx`), `src/runtime/RuntimeStatus.tsx`, `src/runtime/Runtime.tsx`, `src/shell/`, `src/patterns/`, `src/pages/`, `src/App.tsx`.
+
 ## Phase 4: Services wave 1: S3, DynamoDB, SQS, SNS
 
 Pages:
@@ -215,4 +229,4 @@ Deferred by ASD-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 
 ## Next action
 
-Phase 1 and Phase 2 are approved and complete. ASD-Q7 is deferred by the user; later phases target the Docker provider. Push so CI builds the Phase 2 code (not yet authorized), then start Phase 3 task 1 (`tools/capability-gen` writing `capability.json` from the pinned vendor data).
+Phase 3 is implemented and committed but not closed. Fix the unsaved-changes guard defect recorded in the Phase 3 checkpoint, verify the items listed there as not verified, answer ASD-Q8, ASD-Q9 and ASD-Q10, then ask for Phase 3 approval. The Docker emulator is left running for that work. Pushing for CI of Phase 2 and Phase 3 code is not yet authorized.

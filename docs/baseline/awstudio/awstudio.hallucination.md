@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "hallucination"
 status: "active"
 updated: "2026-11-15"
-code_ref: "uncommitted"
+code_ref: "52fe16d"
 ---
 
 # awstudio - decisions and open questions
@@ -40,6 +40,9 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASD-D23 | Lesson: test binaries linking the Tauri runtime fail to load on Windows | lesson | ASD-D20 |
 | ASD-D24 | Default container memory limit stays at the upstream 2g | closed | ASD-D4, ASD-Q6 |
 | ASD-Q7 | Native provider install source: no DEB package URL known | open, deferred | ASD-D4, ASD-D7 |
+| ASD-Q8 | Capability matrix service key: SDK id slug or endpoint prefix | open | ASD-D9, ASD-D13 |
+| ASD-Q9 | Capability matrix scope: every modeled service or the 11 console services | open | ASD-D8, ASD-D9 |
+| ASD-Q10 | Phase 3 acceptance checked on a dev-only pattern gallery | open | ASD-D9 |
 
 ## Closed decisions
 
@@ -289,3 +292,29 @@ Closes ASD-Q6.
 - Options: document an RPM extraction (`rpm2cpio`) into a user directory, find the real DEB URL on the AWS Linux guide, or keep the setting and leave installation to the user.
 - Recommendation: keep the setting and leave installation to the user until the AWS Linux guide shows a DEB URL. [agent]
 - Deferred (Kai, 2026-11-15): not answered now; work concentrates on the Docker provider, and the native provider stays as built, reading `wsl_binary` from settings [user].
+
+
+### ASD-Q8: Capability matrix service key: SDK id slug or endpoint prefix
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+- Question: which key names a service in `capability.json` and in control ids such as `lambda:UpdateFunctionCode`?
+- Found: keying by endpoint prefix merges distinct services: `lambda` would hold lambda, lambdacore, lambdamicrovms and lambdaweb (129 operations instead of 88), `rds` would hold rds, docdb and neptune, `email` would hold ses, sesv2 and pinpointemail. The SDK id is unique per model in this pin (436 keys for 436 models). EventBridge then has two keys: `eventbridge` (53 green of 57) and `cloudwatch-events` (7 green of 51).
+- Options: SDK id slug (`cloudwatch-logs`, `secrets-manager`, `eventbridge`); endpoint prefix (`logs`, `secretsmanager`, `events`, IAM-style, but merges the services above).
+- Implemented as: SDK id slug; the EventBridge pages use `eventbridge`. [agent]
+- Recommendation: keep the SDK id slug. [agent]
+
+### ASD-Q9: Capability matrix scope: every modeled service or the 11 console services
+
+- Question: does `capability.json` cover every modeled service or only the 11 with console pages?
+- Found: every service makes the file 1.36 MB (21637 lines) and a 1176.54 kB frontend chunk, loaded through a dynamic import; the 11 alone would be a small fraction of that.
+- Options: every service (one file for the API Console and fidelity catalog of Phase 7); the 11 now and a second generator output in Phase 7.
+- Implemented as: every modeled service. [agent]
+- Recommendation: keep every service; Phase 7 needs the same data. [agent]
+
+### ASD-Q10: Phase 3 acceptance checked on a dev-only pattern gallery
+
+- Question: is checking the Phase 3 acceptance (UI-only page; green control calls the backend; red control disabled with reason) on a development-only fixture gallery enough to close Phase 3?
+- Found: no service page exists until Phase 4; the gallery (`#/dev/patterns/<pattern>`) is excluded from release builds and binds fixture rows to real matrix operations.
+- Options: accept the gallery check now and repeat it on the first real pages in Phase 4; build one real UI-only page now (for example SSM Maintenance Windows, red) ahead of Phase 6.
+- Recommendation: accept the gallery check and repeat the acceptance on the Phase 4 pages. [agent]

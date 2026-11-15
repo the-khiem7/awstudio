@@ -4,12 +4,12 @@ pack: "awstudio"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-15"
-code_ref: "uncommitted"
+code_ref: "52fe16d"
 ---
 
 # awstudio - source code
 
-Everything under "Planned" is design, not implemented code unless "Implemented in Phase 0", "Implemented in Phase 1" or "Implemented in Phase 2" lists it. "Vendor topology" describes the pinned submodule as inspected.
+Everything under "Planned" is design, not implemented code unless an "Implemented in Phase N" section lists it. "Vendor topology" describes the pinned submodule as inspected.
 
 ## Implemented in Phase 0
 
@@ -59,6 +59,24 @@ Committed in `80a18b6`, `5dc0e1c`, `4f12a55` and `632ca58`; verification is in t
 | `src/bindings.ts` | Generated, committed; `src/runtime/api.ts` now wraps it |
 | `src/runtime/SdkAccess.tsx` | Endpoint, region, files folder, "Test connection", environment tabs with copy, "Open terminal with emulator environment" |
 
+## Implemented in Phase 3
+
+Committed in `11a6413` to `52fe16d`; verification is in the Phase 3 checkpoint of `awstudio.roadmap.md`.
+
+| Path | Role |
+|---|---|
+| `tools/capability-gen/capability_gen.py` | Reads models, `@op` headers, scaffold markers, `not_implemented` messages and the tag's `scores.json.gz` (cached in `.cache/`); writes `capability.json` one operation per line |
+| `src/capability/capability.json` | Generated, committed; loaded as a separate chunk |
+| `src/capability/index.tsx` | `CapabilityProvider` (run-scoped 501 cache), `useCapability("svc:Op", variant?)`, `judge`, `variantUnsupported`, `reportUnsupported`, `tierCounts` |
+| `src/runtime/RuntimeStatus.tsx` | App-wide status poll (2 s), `runId`, `markLifecycle`, version check once per run |
+| `src/shell/` | `TopNav`, `ConsolePage` (AppLayoutToolbar per route, help, split panel slot), hash `router`, `services` (11 services, console paths), `regions`, `preferences` (unified settings in localStorage), `notifications`, `GlobalNotices` (telemetry, version mismatch), `storage` |
+| `src/patterns/` | `gating` (`UiOnlyScope`, `GatedButton`, `UnsupportedBanner`), `ResourceTable`, `DetailsPage`, `CreateForm`, `CreateWizard`, `unsaved`, `DeleteModal`, `ManageTags`, `S3Picker`, `ServiceDashboard`, `ComparisonSplitPanel`, `table-common` (date filter form) |
+| `src/pages/` | `ConsoleHome` (board), `EmulatorPage`, `SettingsPage`, `ServiceLanding` (support table per service), `PatternGallery` (dev builds only) |
+| `src/App.tsx` | Providers, sticky `#top-nav`, routes |
+
+- A page whose primary List or Describe operation is not green wraps its content in `UiOnlyScope`; every `GatedButton` inside is disabled with the page's reason.
+- Control ids are `<service key>:<Operation>`; the service key is the SDK id slug (ASD-Q8 in `awstudio.hallucination.md`).
+
 ## Planned architecture
 
 ```mermaid
@@ -104,16 +122,26 @@ flowchart LR
 | `scripts/` | `dev.ps1`, `build.ps1` |
 | `vendor/` | `aws-emulator`, `cloudscape-demos` submodules |
 
-## Planned capability.json shape
+## capability.json shape
+
+Implemented in Phase 3; the earlier plan keyed operations flat as `lambda:UpdateFunctionCode` and listed variants as bare names.
 
 ```json
 {
-  "vendor": { "repo": "aws/aws-emulator", "commit": "a978cc2cde36", "tag": "v1.0.382", "scoredAt": "2026-11-14T16:25:52Z" },
-  "ops": {
-    "lambda:UpdateFunctionCode": { "tier": "green", "pass": "9/10", "unsupported": ["PublishTo"] }
+ "vendor": { "repo": "aws/aws-emulator", "commit": "a978cc2cde36", "tag": "v1.0.382", "scoredAt": "2026-11-14T16:25:52.650744+00:00" },
+ "thresholds": { "green": ">= 80%", "yellow": "> 0%", "red": "0% or HTTP 501" },
+ "services": {
+  "lambda": {
+   "name": "AWS Lambda", "sdkId": "Lambda", "prefix": "lambda", "models": ["service-com-amazonaws-lambda-awsgirapiservice"],
+   "ops": {
+    "UpdateFunctionCode": {"tier": "green", "pass": "9/10", "unsupported": ["PublishTo"]}
+   }
   }
+ }
 }
 ```
+
+- `reason` is `unwired` or `scaffolded` on an operation that always answers 501.
 
 ## Page pattern sources
 

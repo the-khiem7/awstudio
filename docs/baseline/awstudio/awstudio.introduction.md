@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "introduction"
 status: "active"
 updated: "2026-11-15"
-code_ref: "uncommitted"
+code_ref: "52fe16d"
 ---
 
 # awstudio - introduction
@@ -28,7 +28,7 @@ Out of scope until after packaging: embedded mode (ASD-D5).
 
 | Item | State |
 |---|---|
-| Application code | Phase 0 scaffold, Phase 1 runtime providers (Docker, native WSL, attach) with the Runtime page, and Phase 2 session loading, shared SDK clients with the endpoint guard, generated bindings and the SDK access panel are committed; no console pages |
+| Application code | Phase 0 scaffold, Phase 1 runtime providers (Docker, native WSL, attach), Phase 2 session loading, shared SDK clients with the endpoint guard and generated bindings, and Phase 3 capability matrix, console shell, Console Home, Emulator page, Unified Settings, page patterns and per-service support landing pages are committed; no service console pages |
 | Branch | `main` |
 | Committed | `.gitmodules`, `vendor/aws-emulator`, `vendor/cloudscape-demos`, this pack |
 | Windows CI | verified: GitHub Actions run 43653923870 on commit `9163495` passed (job `windows`, 4m34s) |
@@ -82,6 +82,25 @@ Tiers per ASD-D9 thresholds, before the unscored-operation rule and variant gati
 | KMS | 54 | 41 / 8 / 5 / 0 |
 | CloudWatch Logs | 118 | 85 / 25 / 7 / 1 |
 | EventBridge | 57 | 46 / 4 / 0 / 7 |
+
+Generated matrix (`src/capability/capability.json`, tools/capability-gen), with the 501 rules applied: unwired or scaffolded operations are red even when a step that expects an error passes; unscored operations are green unless they have a named unsupported variant.
+
+| Service key | Ops | Green / Yellow / Red |
+|---|---|---|
+| `s3` | 112 | 97 / 10 / 5 |
+| `dynamodb` | 58 | 35 / 19 / 4 |
+| `sqs` | 23 | 19 / 4 / 0 |
+| `sns` | 42 | 38 / 3 / 1 |
+| `lambda` | 88 | 72 / 11 / 5 |
+| `iam` | 180 | 147 / 17 / 16 |
+| `secrets-manager` | 23 | 22 / 0 / 1 |
+| `ssm` | 152 | 45 / 22 / 85 |
+| `kms` | 54 | 41 / 8 / 5 |
+| `cloudwatch-logs` | 118 | 86 / 25 / 7 |
+| `eventbridge` | 57 | 53 / 4 / 0 |
+
+- Operations with no `//! @op` handler, or whose file carries `//! SCAFFOLDED, NOT IMPLEMENTED:`, always answer HTTP 501.
+- Some `not_implemented` messages hold only a run-time placeholder (`{unserved}`, `{member}`, many S3 operations); they name no feature a page can gate on.
 
 SSM by console area:
 
