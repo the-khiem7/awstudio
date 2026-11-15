@@ -13,7 +13,7 @@ Everything under "Planned" is design, not implemented code unless "Implemented i
 
 ## Implemented in Phase 0
 
-Uncommitted working tree; verified items are in the Phase 0 checkpoint of `awsandbox.roadmap.md`.
+Committed in `d535a96`; verified items are in the Phase 0 checkpoint of `awsandbox.roadmap.md`.
 
 | Path | Role |
 |---|---|

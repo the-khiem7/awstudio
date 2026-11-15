@@ -51,20 +51,20 @@ Acceptance:
 
 Verification gate: if the GNU target fails to build the Tauri app or the SDK crypto stack, switch that machine's profile to `cargo-xwin` and record the failure in `hallucination` before continuing. If `aws-lc-rs` needs tools the machine cannot install per-user, try the SDK's `rustls-ring` TLS feature.
 
-Checkpoint (tasks 1 to 9 done, task 10 waits for commit approval):
+Checkpoint (tasks 1 to 10 done, committed in `d535a96`):
 
 | Acceptance | State |
 |---|---|
 | `scripts/dev.ps1` opens a window with a Cloudscape AppLayout | verified on the GNU-family machine: window titled `awsandbox`, heading rendered under the strict CSP |
-| Same scaffold builds on a Windows runner in CI | not verified: `.github/workflows/ci.yml` written, nothing pushed so it has not run |
-| SDK crate and custom-CA client compile | verified locally with `scripts/build.ps1 --debug --no-bundle` (release profile, 9m16s, `awsandbox.exe` produced); CI not verified; TLS against a running emulator not exercised |
+| Same scaffold builds on a Windows runner in CI | verified: GitHub Actions run 43653923870 on commit `9163495`, job `windows` passed in 4m34s (checkout, Node, rustup, `npm ci`, `npm run tauri -- build --debug --no-bundle`) |
+| SDK crate and custom-CA client compile | verified locally with `scripts/build.ps1 --debug --no-bundle` (release profile, 9m16s, `awsandbox.exe` produced) and in the same CI run; TLS against a running emulator not exercised |
 | `tools/vendor-drift` `v1.0.364` to `v1.0.382` prints a summary for the 11 services | verified: tier changes S3 1, SNS 5, Lambda 4, SSM 4; variants removed SSM 2; Smithy model files changed 0; 339 issues moved to now-work |
 | Hygiene hook blocks a staged file with the local machine name | verified by running `.githooks/pre-commit` on a staged probe file (exit 1, no name printed); an actual `git commit` refusal was not exercised |
 
 - Toolchain gate: the GNU target failed and `gnullvm` passed; cause and fix in ASB-D20. `cargo-xwin` and `rustls-ring` were not needed.
 - Changed files: root `package.json`, `package-lock.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `.gitignore`, `.gitattributes`, `.gitmodules` (`shallow = true`), `README.md`; `src/`; `src-tauri/` (`Cargo.toml`, `Cargo.lock`, `tauri.conf.json`, `capabilities/default.json`, `icons/`, `src/lib.rs`, `src/main.rs`, `src/emulator_tls.rs`); `machines/_default.toml`, `machines/README.md`; `scripts/dev.ps1`, `scripts/build.ps1`, `scripts/machine.ps1`; `tools/vendor-drift/`, `tools/hygiene/`; `.githooks/pre-commit`; `.github/workflows/ci.yml`.
 - Local setup, not tracked: llvm-mingw `20261104` under `%LOCALAPPDATA%\Programs`, user PATH entries for `~/.cargo/bin` and llvm-mingw, the `gnullvm` and `gnu` rustup toolchains (the `gnu` one is unused), the gitignored local machine file, `core.hooksPath=.githooks`, and an untracked `hygiene-deny.txt` in the git directory.
-- Risk: the icon set is a generated placeholder; the CI action versions are pinned by commit SHA and unrun.
+- Risk: the icon set is a generated placeholder; the CI action pins ran green once.
 
 ## Phase 1: Runtime providers
 
