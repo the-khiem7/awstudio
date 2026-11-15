@@ -3,8 +3,8 @@ baseline_schema: "3.0"
 pack: "awstudio"
 document: "hallucination"
 status: "active"
-updated: "2026-11-15"
-code_ref: "b718f5c"
+updated: "2026-11-16"
+code_ref: "acef8b3"
 ---
 
 # awstudio - decisions and open questions
@@ -47,7 +47,10 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASD-D30 | Lesson: specta refuses to export serde_json::Value to the bindings | lesson | ASD-D23 |
 | ASD-D31 | S3 transfer acceptance sized to the emulator's 64 MiB per-bucket limit | closed | ASD-D18, ASD-Q11 |
 | ASD-D32 | A yellow primary read loads its page under a partly supported banner | closed | ASD-D9, ASD-D28, ASD-Q12 |
+| ASD-D33 | Lesson: Lambda refuses a second update while the first is still running | lesson | ASD-D9 |
 | ASD-Q7 | Native provider install source: no DEB package URL known | open, deferred | ASD-D4, ASD-D7 |
+| ASD-Q13 | Lambda pages when the emulator keeps one function namespace for every Region | open | ASD-D9, ASD-D32 |
+| ASD-Q14 | Partly supported operations that a page's main flow needs: Create access key, Edit function configuration | open | ASD-D9, ASD-D32 |
 
 ## Closed decisions
 
@@ -365,6 +368,15 @@ Closes ASD-Q12. Reverses in part ASD-D9 (its rule that a page whose primary read
 - Rejected: (a) keep ASD-D9 as is - hides working green actions such as Create queue [user].
 - Rejected: (c) keep the rule and add a Create queue entry outside the Queues page - fixes one action and leaves the yellow-read pages empty [user].
 
+### ASD-D33: Lesson: Lambda refuses a second update while the first is still running
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+- Believed: after `CreateFunction`, `UpdateFunctionCode` or `UpdateFunctionConfiguration` returns, the function can be invoked, updated again or published at once (Phase 5 Code and Test tabs).
+- Why it looked reasonable: each call answers 200 with the new configuration, and the first backend probe created a function and read it back without trouble.
+- What disproved it: `CreateFunction` answers `State` `Pending` and an `Invoke` sent at once got HTTP 409 `ResourceConflictException` "currently in the following state: Pending"; `UpdateFunctionCode` answers `LastUpdateStatus` `InProgress` and the next `UpdateFunctionCode` or `UpdateFunctionConfiguration` got 409 "An update is in progress"; `ListFunctions` carries no `State`.
+- Fix: the backend `wait_ready` polls `GetFunctionConfiguration` every 500 ms for up to 40 s until the function is not `Pending` and its last update is not `InProgress`; deploy, configuration update and publish call it first, `Invoke` retries once after a 409 and waits, and the details page polls while the function is busy. The list has no State column. After the fix the same sequence passed. [agent]
+
 ## Open questions
 
 ### ASD-Q7: Native provider install source: no DEB package URL known
@@ -374,3 +386,22 @@ Closes ASD-Q12. Reverses in part ASD-D9 (its rule that a page whose primary read
 - Options: document an RPM extraction (`rpm2cpio`) into a user directory, find the real DEB URL on the AWS Linux guide, or keep the setting and leave installation to the user.
 - Recommendation: keep the setting and leave installation to the user until the AWS Linux guide shows a DEB URL. [agent]
 - Deferred (Kai, 2026-11-15): not answered now; work concentrates on the Docker provider, and the native provider stays as built, reading `wsl_binary` from settings [user].
+
+
+### ASD-Q13: Lambda pages when the emulator keeps one function namespace for every Region
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+- Question: should the Lambda pages show only the functions of the selected Region, as the console and the other four services do?
+- Found: a function created in `us-east-1` is listed, fetched and invoked from `eu-west-1` and `ap-southeast-2`, its ARN names `us-east-1`, and creating the same name in `eu-west-1` fails with `ResourceConflictException` "Function already exist". SQS, SNS, DynamoDB and S3 data are partitioned by Region (Phase 2 and Phase 4 measurements).
+- Options: (a) list every function with a Region column read from the ARN, no filter; (b) list only the functions whose ARN Region is the selected one, so a name clash looks like a hidden function; (c) pin the Lambda pages to one Region.
+- Recommendation: (a), what the pages do now: it shows what the emulator holds and explains the clash. [agent]
+
+### ASD-Q14: Partly supported operations that a page's main flow needs: Create access key, Edit function configuration
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+- Question: should a yellow operation that a page's main flow needs be enabled, in place of staying disabled under ASD-D9?
+- Found: `iam:CreateAccessKey` (2 of 3 conformance steps) and `lambda:UpdateFunctionConfiguration` (25 of 37) are yellow, so the Create access key button and the function Edit configuration button are disabled; called through the backend, both worked (access key created, deactivated and listed; description, handler, memory, timeout and environment changed). `iam:ListAccessKeys` (6 of 10), `iam:GetRole`, `iam:GetPolicy`, `iam:ListPolicies`, `lambda:ListVersionsByFunction` and `lambda:ListEventSourceMappings` are yellow reads that load under the partly supported banner (ASD-D32).
+- Options: (a) keep ASD-D9 as is, the two buttons stay disabled; (b) enable those two controls and keep every other yellow control disabled; (c) enable every yellow control that the probe shows working.
+- Recommendation: (b): one flow per service is blocked, each worked when called, and the partly supported banner already warns on those pages. [agent]

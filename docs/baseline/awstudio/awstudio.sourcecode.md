@@ -3,8 +3,8 @@ baseline_schema: "3.0"
 pack: "awstudio"
 document: "sourcecode"
 status: "draft"
-updated: "2026-11-15"
-code_ref: "b718f5c"
+updated: "2026-11-16"
+code_ref: "acef8b3"
 ---
 
 # awstudio - source code
@@ -103,6 +103,25 @@ Routes (hash paths mirroring console paths):
 | DynamoDB | `/dynamodbv2/{dashboard,tables,create-table,backups,partiql-editor}`, `/dynamodbv2/tables/<name>`, `/dynamodbv2/item-explorer?table=`, `/dynamodbv2/{create-item,edit-item}?table=&key=` |
 | SQS | `/sqs/queues`, `/sqs/queues/create`, `/sqs/queues/<url>`, `/sqs/queues/<url>/{edit,send-receive}` |
 | SNS | `/sns/{dashboard,topics,create-topic,subscriptions,create-subscription}`, `/sns/topic/<arn>`, `/sns/publish/<arn>`, `/sns/subscription/<arn>` |
+
+## Implemented in Phase 5
+
+Committed in `32cc89a` (commands) and `a241ecd` (pages); verification is in the Phase 5 checkpoint of `awstudio.roadmap.md`.
+
+| Path | Role |
+|---|---|
+| `src-tauri/src/aws.rs` | `Clients::lambda_in` (a client per Region), `iam` (session Region, IAM is global), `fetch` (download of an emulator URL: CA-only trust, endpoint guard on the URL, no redirect, size cap) |
+| `src-tauri/src/services/iam.rs` | 41 commands; `PrincipalKind` and `TaggableKind` share the attach, detach, inline policy and tag commands; `decode_document` undoes URL-encoding; user, group and role deletes clean up first; `NewAccessKey` has no `Debug` |
+| `src-tauri/src/services/lambda.rs` | 20 commands; `read_zip` and `write_zip` (files with no text keep their bytes), `package_of` (GetFunction `Code.Location` through `Clients::fetch`), `wait_ready` (ASD-D33), `lambda_invoke` with the decoded log tail |
+| `src/services/iam/IamPages.tsx` | `iamPage(path)`: dashboard, users, groups, roles, policies; `Permissions` (shared by user, group and role), `PolicyPicker`, create wizards for users and roles, access keys tab |
+| `src/services/lambda/LambdaPages.tsx` | `lambdaPage(path)`: dashboard, functions, create form, details with `CodeTab`, `TestTab` (events in localStorage `awstudio.lambda.events.<name>`), configuration sections, `AliasesTab`, `VersionsTab` |
+
+Routes:
+
+| Service | Routes |
+|---|---|
+| IAM | `/iam/dashboard`, `/iam/{users,groups,roles,policies}`, `/iam/{users,groups,roles,policies}/create`, `/iam/users/<name>?tab=`, `/iam/groups/<name>?tab=`, `/iam/roles/<name>?tab=`, `/iam/policies/<arn>?tab=` (the ARN is URL-encoded) |
+| Lambda | `/lambda/dashboard`, `/lambda/functions`, `/lambda/functions/create`, `/lambda/functions/<name>?tab=code\|test\|configuration\|aliases\|versions` |
 
 ## Planned architecture
 
