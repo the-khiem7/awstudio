@@ -1,6 +1,8 @@
 //! Tauri commands over the runtime providers. All provider work runs on a blocking worker so a
 //! slow `docker build` never stalls the event loop.
 
+use crate::aws::{map_sdk_error, ApiError, Clients};
+use crate::env::{self, Shell};
 use crate::provider::attach::AttachProvider;
 use crate::provider::docker::DockerProvider;
 use crate::provider::native::NativeProvider;
@@ -10,7 +12,9 @@ use crate::provider::{
     Endpoint, Health, LogLine, Provider, ProviderError, ProviderKind, RunState, StartOptions, PINNED_VERSION,
 };
 use crate::provider::LogStream;
+use crate::session::{Session, SessionInfo};
 use serde::Serialize;
+use specta::Type;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tauri::ipc::Channel;
@@ -21,6 +25,8 @@ pub struct Runtime {
     dir: PathBuf,
     provider: Option<Box<dyn Provider>>,
     log: Option<LogStream>,
+    /// SDK clients of the current emulator run; rebuilt when the run's key or CA changes.
+    clients: Option<Clients>,
 }
 
 #[derive(Clone)]
@@ -29,11 +35,11 @@ pub struct AppState(pub Arc<Mutex<Runtime>>);
 impl AppState {
     pub fn new(dir: PathBuf) -> Self {
         let settings = settings::load(&dir);
-        AppState(Arc::new(Mutex::new(Runtime { settings, dir, provider: None, log: None })))
+        AppState(Arc::new(Mutex::new(Runtime { settings, dir, provider: None, log: None, clients: None })))
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Type)]
 pub struct Status {
     kind: ProviderKind,
     state: RunState,
@@ -87,12 +93,41 @@ impl Runtime {
             Ok(())
         }
     }
+
+    /// Clients for the current run. The session files are read on every call; clients are reused
+    /// while the run's key, CA and region are unchanged and rebuilt after a restart.
+    fn clients(&mut self) -> Result<Clients, ApiError> {
+        let endpoint = self.provider()?.endpoint();
+        let session = Session::load(&endpoint).map_err(|e| ApiError::Session { detail: e.to_string() })?;
+        if let Some(c) = &self.clients {
+            if c.session().same_run(&session) {
+                return Ok(c.clone());
+            }
+        }
+        let c = Clients::new(session)?;
+        self.clients = Some(c.clone());
+        Ok(c)
+    }
+
+    /// Loads the session of a run that just started, so the first SDK call needs no file read.
+    /// A failure is left for that call to report.
+    fn refresh_session(&mut self) {
+        self.clients = None;
+        let _ = self.clients();
+    }
 }
 
-async fn blocking<T, F>(state: &State<'_, AppState>, f: F) -> Result<T, ProviderError>
+impl From<ProviderError> for ApiError {
+    fn from(e: ProviderError) -> Self {
+        ApiError::Session { detail: e.to_string() }
+    }
+}
+
+async fn blocking<T, E, F>(state: &State<'_, AppState>, f: F) -> Result<T, E>
 where
     T: Send + 'static,
-    F: FnOnce(&mut Runtime) -> Result<T, ProviderError> + Send + 'static,
+    E: From<ProviderError> + Send + 'static,
+    F: FnOnce(&mut Runtime) -> Result<T, E> + Send + 'static,
 {
     let inner = state.0.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -104,6 +139,7 @@ where
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn provider_status(state: State<'_, AppState>) -> Result<Status, ProviderError> {
     // A start, stop or build holds the lock for a long time; report that instead of waiting.
     let inner = state.0.clone();
@@ -123,36 +159,46 @@ pub async fn provider_status(state: State<'_, AppState>) -> Result<Status, Provi
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn provider_start(state: State<'_, AppState>) -> Result<(), ProviderError> {
     blocking(&state, |rt| {
         let opts = rt.opts();
-        rt.provider()?.start(&opts)
+        rt.provider()?.start(&opts)?;
+        rt.refresh_session();
+        Ok(())
     })
     .await
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn provider_stop(state: State<'_, AppState>, confirm_data_loss: bool) -> Result<(), ProviderError> {
     blocking(&state, move |rt| {
         rt.require_confirmation(confirm_data_loss)?;
         rt.log = None;
+        rt.clients = None;
         rt.provider()?.stop()
     })
     .await
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn provider_restart(state: State<'_, AppState>, confirm_data_loss: bool) -> Result<(), ProviderError> {
     blocking(&state, move |rt| {
         rt.require_confirmation(confirm_data_loss)?;
         rt.log = None;
+        rt.clients = None;
         let opts = rt.opts();
-        rt.provider()?.restart(&opts)
+        rt.provider()?.restart(&opts)?;
+        rt.refresh_session();
+        Ok(())
     })
     .await
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn provider_version_check(state: State<'_, AppState>) -> Result<VersionCheck, ProviderError> {
     blocking(&state, |rt| {
         let running = rt.provider()?.version()?;
@@ -164,6 +210,7 @@ pub async fn provider_version_check(state: State<'_, AppState>) -> Result<Versio
 /// "Rebuild image at pinned version": rebuilds the Docker image at the version the capability
 /// matrix was made from.
 #[tauri::command]
+#[specta::specta]
 pub async fn provider_rebuild_image(state: State<'_, AppState>) -> Result<(), ProviderError> {
     blocking(&state, |rt| {
         let port = rt.settings.port;
@@ -174,6 +221,7 @@ pub async fn provider_rebuild_image(state: State<'_, AppState>) -> Result<(), Pr
 
 /// Streams emulator log lines into `on_line`: the lines already buffered, then live ones.
 #[tauri::command]
+#[specta::specta]
 pub async fn provider_logs(state: State<'_, AppState>, on_line: Channel<LogLine>) -> Result<(), ProviderError> {
     blocking(&state, move |rt| {
         rt.log = None;
@@ -188,6 +236,7 @@ pub async fn provider_logs(state: State<'_, AppState>, on_line: Channel<LogLine>
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_settings(state: State<'_, AppState>) -> Result<Settings, ProviderError> {
     blocking(&state, |rt| Ok(rt.settings.clone())).await
 }
@@ -195,6 +244,7 @@ pub async fn get_settings(state: State<'_, AppState>) -> Result<Settings, Provid
 /// Saves settings. Changing the provider kind, port or WSL target drops the cached provider so the
 /// next call builds one for the new target.
 #[tauri::command]
+#[specta::specta]
 pub async fn save_settings(state: State<'_, AppState>, settings: Settings) -> Result<(), ProviderError> {
     blocking(&state, move |rt| {
         let target_changed = rt.settings.provider != settings.provider
@@ -209,6 +259,7 @@ pub async fn save_settings(state: State<'_, AppState>, settings: Settings) -> Re
             }
             rt.log = None;
             rt.provider = None;
+            rt.clients = None;
         }
         rt.settings = settings;
         settings::save(&rt.dir, &rt.settings)?;
@@ -218,12 +269,78 @@ pub async fn save_settings(state: State<'_, AppState>, settings: Settings) -> Re
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn ack_telemetry_notice(state: State<'_, AppState>, telemetry: bool) -> Result<(), ProviderError> {
     blocking(&state, move |rt| {
         rt.settings.telemetry = telemetry;
         rt.settings.telemetry_notice_seen = true;
         settings::save(&rt.dir, &rt.settings)?;
         Ok(())
+    })
+    .await
+}
+
+/// Result of the two calls that prove the backend can reach the running emulator with this run's
+/// keys and CA.
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct SessionCheck {
+    pub endpoint_url: String,
+    pub region: String,
+    pub account: String,
+    pub arn: String,
+    pub bucket_count: u32,
+}
+
+/// Endpoint, region and files folder of the current run. No keys.
+#[tauri::command]
+#[specta::specta]
+pub async fn session_info(state: State<'_, AppState>) -> Result<SessionInfo, ApiError> {
+    blocking(&state, |rt| Ok(rt.clients()?.session().info())).await
+}
+
+/// Calls `sts:GetCallerIdentity` and `s3:ListBuckets` with the current run's session.
+#[tauri::command]
+#[specta::specta]
+pub async fn session_check(state: State<'_, AppState>) -> Result<SessionCheck, ApiError> {
+    let clients: Clients = blocking(&state, |rt| rt.clients()).await?;
+    let identity = clients
+        .sts()
+        .get_caller_identity()
+        .send()
+        .await
+        .map_err(|e| map_sdk_error("GetCallerIdentity", e))?;
+    let buckets = clients.s3().list_buckets().send().await.map_err(|e| map_sdk_error("ListBuckets", e))?;
+    let s = clients.session();
+    Ok(SessionCheck {
+        endpoint_url: s.endpoint_url.clone(),
+        region: s.region.clone(),
+        account: identity.account().unwrap_or_default().to_string(),
+        arn: identity.arn().unwrap_or_default().to_string(),
+        bucket_count: buckets.buckets().len() as u32,
+    })
+}
+
+fn env_vars(rt: &mut Runtime) -> Result<(Vec<(&'static str, String)>, String), ApiError> {
+    let endpoint = rt.provider()?.endpoint();
+    let clients = rt.clients()?;
+    Ok((env::variables(&endpoint, clients.session()), clients.session().endpoint_url.clone()))
+}
+
+/// Shell lines that point the AWS CLI and SDKs at the emulator. They name the emulator's files,
+/// never the key values.
+#[tauri::command]
+#[specta::specta]
+pub async fn env_block(state: State<'_, AppState>, shell: Shell) -> Result<String, ApiError> {
+    blocking(&state, move |rt| Ok(env::block(shell, &env_vars(rt)?.0))).await
+}
+
+/// Opens a PowerShell window with the emulator environment.
+#[tauri::command]
+#[specta::specta]
+pub async fn open_terminal(state: State<'_, AppState>) -> Result<(), ApiError> {
+    blocking(&state, |rt| {
+        let (vars, url) = env_vars(rt)?;
+        env::open_terminal(&vars, &url).map_err(|e| ApiError::Session { detail: format!("cannot open a terminal: {e}") })
     })
     .await
 }
@@ -278,6 +395,7 @@ mod tests {
             dir: PathBuf::new(),
             provider: Some(Box::new(Fake { running })),
             log: None,
+            clients: None,
         }
     }
 
