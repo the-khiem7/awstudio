@@ -75,7 +75,7 @@ Committed in `11a6413` to `52fe16d`, navigation guard in `8ce1a04`; verification
 | `src/App.tsx` | Providers, sticky `#top-nav`, routes |
 
 - A page whose primary List or Describe operation is not green wraps its content in `UiOnlyScope`; every `GatedButton` inside is disabled with the page's reason.
-- Control ids are `<service key>:<Operation>`; the service key is the SDK id slug (ASD-Q8 in `awstudio.hallucination.md`).
+- Control ids are `<service key>:<Operation>`; the service key is the SDK id slug (ASD-D26 in `awstudio.hallucination.md`).
 
 ## Planned architecture
 

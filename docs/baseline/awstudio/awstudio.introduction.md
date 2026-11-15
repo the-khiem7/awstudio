@@ -4,14 +4,14 @@ pack: "awstudio"
 document: "introduction"
 status: "active"
 updated: "2026-11-15"
-code_ref: "52fe16d"
+code_ref: "8ce1a04"
 ---
 
 # awstudio - introduction
 
 ## Scope
 
-`awstudio` is a Tauri v2 desktop app (Windows first, Linux deferred, ASD-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awstudio.hallucination.md` ASD-D1 to ASD-D24.
+`awstudio` is a Tauri v2 desktop app (Windows first, Linux deferred, ASD-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awstudio.hallucination.md` ASD-D1 to ASD-D28.
 
 In scope:
 

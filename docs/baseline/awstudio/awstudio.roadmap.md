@@ -16,7 +16,7 @@ code_ref: "8ce1a04"
 | Phase 0 | Foundation and toolchain gate | complete | - |
 | Phase 1 | Runtime providers | complete | Phase 0 |
 | Phase 2 | Session and SDK access | complete | Phase 1 |
-| Phase 3 | Console shell and capability matrix | in progress | Phase 2 |
+| Phase 3 | Console shell and capability matrix | complete | Phase 2 |
 | Phase 4 | Services wave 1: S3, DynamoDB, SQS, SNS | planned | Phase 3 |
 | Phase 5 | Services wave 2: IAM, Lambda | planned | Phase 4 |
 | Phase 6 | Services wave 3: Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge | planned | Phase 5 |
@@ -148,14 +148,14 @@ Acceptance:
 - A UI-only page shows the empty table, the "Not supported by AWS Emulator vX" banner and disabled actions.
 - A green control calls the backend; a red control is disabled with its reason.
 
-Checkpoint (tasks 1 to 7 implemented, committed in `11a6413`, `dc3cb58`, `147ba03`, `689a5fd`, `cacf9d5`, `76256ab`, `b53d859`, `52fe16d`; unsaved-changes guard fixed in `8ce1a04`; phase not closed, waiting on ASD-Q8, ASD-Q9, ASD-Q10 and approval):
+Checkpoint (tasks 1 to 7 implemented, committed in `11a6413`, `dc3cb58`, `147ba03`, `689a5fd`, `cacf9d5`, `76256ab`, `b53d859`, `52fe16d`; unsaved-changes guard fixed in `8ce1a04`; closed with Kai's approval on 2026-11-15, acceptance accepted on the gallery per ASD-D28):
 
 | Acceptance | State |
 |---|---|
-| UI-only page: empty table, banner, disabled actions | verified on the dev-only pattern gallery (`#/dev/patterns/gating`, fixture rows, primary op `ssm:DescribeMaintenanceWindows`): empty state only, banner "Not supported by AWS Emulator v1.0.382", Delete and Create disabled with "This page is view-only: ..."; no service page exists yet (ASD-Q10) |
+| UI-only page: empty table, banner, disabled actions | verified on the dev-only pattern gallery (`#/dev/patterns/gating`, fixture rows, primary op `ssm:DescribeMaintenanceWindows`): empty state only, banner "Not supported by AWS Emulator v1.0.382", Delete and Create disabled with "This page is view-only: ..."; no service page exists yet; repeated on the Phase 4 pages (ASD-D28) |
 | Green control calls the backend; red control disabled with reason | verified in the same gallery with a running Docker emulator: `sts:GetCallerIdentity` button answered account `000000000000`; `ssm:DescribeMaintenanceWindows` disabled with "... is not implemented in AWS Emulator v1.0.382 (HTTP 501)"; yellow `s3:GetObjectAttributes` and `lambda:UpdateFunctionCode` with `PublishTo` disabled |
 
-- Tasks: 1 `tools/capability-gen/capability_gen.py` writes `src/capability/capability.json` (436 services, 19451 operations, key = SDK id slug, ASD-Q8; every modeled service, ASD-Q9); 2 `useCapability`, `judge`, `reportUnsupported`, run-scoped 501 cache reset by `runId` of the app-wide `RuntimeStatusProvider`; 3 shell under `src/shell/` (TopNavigation with `LOCAL` logo badge, service search with Alt+S, Services menu, Emulator status button, Region menu, account menu, `ConsolePage` with breadcrumbs, Flashbar, help panel, split panel slot, Unified Settings page); 4 Console Home board (Recently visited, Emulator health, Emulator fidelity); 5 Emulator page wrapping `Runtime` with Version and Telemetry fields, telemetry notice and version-mismatch notice moved to the shell; 6 13 patterns under `src/patterns/`; 7 hash routes `#/`, `#/emulator`, `#/settings`, a support landing page per console service path, `#/dev/patterns/<pattern>` in dev builds only.
+- Tasks: 1 `tools/capability-gen/capability_gen.py` writes `src/capability/capability.json` (436 services, 19451 operations, key = SDK id slug, ASD-D26; every modeled service, ASD-D27); 2 `useCapability`, `judge`, `reportUnsupported`, run-scoped 501 cache reset by `runId` of the app-wide `RuntimeStatusProvider`; 3 shell under `src/shell/` (TopNavigation with `LOCAL` logo badge, service search with Alt+S, Services menu, Emulator status button, Region menu, account menu, `ConsolePage` with breadcrumbs, Flashbar, help panel, split panel slot, Unified Settings page); 4 Console Home board (Recently visited, Emulator health, Emulator fidelity); 5 Emulator page wrapping `Runtime` with Version and Telemetry fields, telemetry notice and version-mismatch notice moved to the shell; 6 13 patterns under `src/patterns/`; 7 hash routes `#/`, `#/emulator`, `#/settings`, a support landing page per console service path, `#/dev/patterns/<pattern>` in dev builds only.
 - Evidence: `uv run tools/capability-gen/capability_gen.py --summary` twice, byte-identical output; `npm run build` passed (capability chunk 1176.54 kB, no gallery chunk in the release build); dev app (`scripts/dev.ps1`) driven over WebView2 remote debugging: every route and all 13 gallery pages rendered with no exception, Start reached running in 9 s, version 1.0.382 matched the pin, Unified Settings dark and compact applied and persisted.
 - Defect, fixed in `8ce1a04`: the unsaved-changes guard (`useUnsavedChanges`) did not hold a hash change on a dirty create form; cause and fix in ASD-D25. Repro `#/dev/patterns/create`, type a name, `location.hash = "#/"` now stays on the form with the Leave page modal; with the old files the same script ends on `#/`.
 - Verified after the fix (dev server, headless Edge 157 over remote debugging, 1600x1000 viewport, real input and pointer events): Leave and Cancel in the Leave page modal; Cancel on a dirty form opens the modal; wizard blocks Next without a name, holds a navigation when dirty, steps to Set permissions and Review, submit goes to `#/dev/patterns/gating`; typed delete stays disabled until the exact name `fixture-01` is typed, deletes and closes, simple delete enabled; inline edit opens, submits through the async save and closes (fixture rows do not keep the value by design); comparison split panel shows `2 fixtures selected` and Compare details; tag add and Save changes navigate to the gallery; S3 read picker opens, browses `fixture-bucket` and writes `s3://fixture-bucket/readme.txt` back; Region menu selects Ireland `eu-west-1`, stores it as `awstudio.region` and keeps it after reload; Services menu lists Console Home and the 11 services; Alt+S focuses service search, `queue` offers Simple Queue Service, selecting it opens `#/sqs`; Console Home board drag swapped Recently visited and Emulator health and resize changed `health` from 2x3 to 1x5, both stored in `awstudio.home.layout`; no console errors.
@@ -173,7 +173,7 @@ Pages:
 - SQS: queues, create queue (Standard or FIFO, DLQ, access policy), queue details (SNS subscriptions, Lambda triggers, DLQ, tags, encryption), send and receive messages, purge.
 - SNS: dashboard, topics, create topic, topic details (subscriptions, access policy, tags), publish message, subscriptions.
 
-Acceptance: every green control works against the running emulator; S3 upload and download stream through the backend for a file of at least 100 MB.
+Acceptance: every green control works against the running emulator; S3 upload and download stream through the backend for a file of at least 100 MB; the Phase 3 gating acceptance (UI-only page with empty table, banner and disabled actions; green control calls the backend; red control disabled with its reason) is repeated on these pages (ASD-D28).
 
 ## Phase 5: Services wave 2: IAM, Lambda
 
@@ -231,4 +231,4 @@ Deferred by ASD-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 
 ## Next action
 
-Phase 3 is implemented, committed and verified except the items its checkpoint lists as not verified, which wait on Phase 4 commands, a mismatched image, or a push. The unsaved-changes guard defect is fixed (ASD-D25). Answer ASD-Q8, ASD-Q9 and ASD-Q10, then approve Phase 3 to close it; Phase 4 starts after that. The Docker emulator is left running. Pushing for CI of Phase 2 and Phase 3 code is not yet authorized.
+Phase 3 is complete. Phase 4 (services wave 1: S3, DynamoDB, SQS, SNS) is the next ready phase and starts only when the owner asks for it; its acceptance includes repeating the Phase 3 gating acceptance on the real pages (ASD-D28). Carry into Phase 4: backend errors should report `service:Operation`, and service commands should take the selected Region. The Docker emulator is left running. Pushing for CI of Phase 2 and Phase 3 code is not yet authorized.
