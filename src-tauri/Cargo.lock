@@ -491,7 +491,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "awsandbox"
+name = "awstudio"
 version = "0.0.0"
 dependencies = [
  "aws-sdk-s3",

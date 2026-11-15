@@ -2,10 +2,10 @@
 //! to downloads.aws.com on the first image build, and a free port 9297, so they are ignored by
 //! default. Run with `cargo test --test live_providers -- --ignored --nocapture`.
 
-use awsandbox_lib::provider::attach::AttachProvider;
-use awsandbox_lib::provider::docker::DockerProvider;
-use awsandbox_lib::provider::native::NativeProvider;
-use awsandbox_lib::provider::{version, Health, LogLine, Provider, RunState, StartOptions, DEFAULT_MEMORY_LIMIT};
+use awstudio_lib::provider::attach::AttachProvider;
+use awstudio_lib::provider::docker::DockerProvider;
+use awstudio_lib::provider::native::NativeProvider;
+use awstudio_lib::provider::{version, Health, LogLine, Provider, RunState, StartOptions, DEFAULT_MEMORY_LIMIT};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -43,13 +43,13 @@ fn docker_provider_start_health_logs_version_restart_stop() {
     assert_eq!(p.health(), Health::Unknown);
 }
 
-/// Needs an emulator binary inside WSL: set AWSANDBOX_WSL_BIN (and AWSANDBOX_WSL_DISTRO if the
+/// Needs an emulator binary inside WSL: set AWSTUDIO_WSL_BIN (and AWSTUDIO_WSL_DISTRO if the
 /// default distribution is not the one that holds it).
 #[test]
 #[ignore]
 fn native_provider_and_attach_provider_on_one_emulator() {
-    let bin = std::env::var("AWSANDBOX_WSL_BIN").expect("AWSANDBOX_WSL_BIN");
-    let distro = std::env::var("AWSANDBOX_WSL_DISTRO").unwrap_or_default();
+    let bin = std::env::var("AWSTUDIO_WSL_BIN").expect("AWSTUDIO_WSL_BIN");
+    let distro = std::env::var("AWSTUDIO_WSL_DISTRO").unwrap_or_default();
     let o = StartOptions { port: 9298, memory_limit: DEFAULT_MEMORY_LIMIT.into(), telemetry: false };
     let mut n = NativeProvider::new(&distro, &bin, 9298);
     let _ = n.stop();

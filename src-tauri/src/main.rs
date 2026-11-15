@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    awsandbox_lib::run()
+    awstudio_lib::run()
 }

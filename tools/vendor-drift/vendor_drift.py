@@ -25,7 +25,7 @@ REPO = Path(__file__).resolve().parents[2]
 SUBMODULE = REPO / "vendor" / "aws-emulator"
 CACHE = Path(__file__).resolve().parent / ".cache"
 UPSTREAM = "aws/aws-emulator"
-PACK_ENTRIES = REPO / "docs" / "baseline" / "awsandbox" / "awsandbox.hallucination.md"
+PACK_ENTRIES = REPO / "docs" / "baseline" / "awstudio" / "awstudio.hallucination.md"
 
 SERVICES = {
     "S3": ["service-com-amazonaws-s3-amazons3"],
@@ -171,8 +171,9 @@ def tiers(scores, ops):
 def pack_entries(changed):
     """Entries with a vendor line whose text names a changed service or operation."""
     if not PACK_ENTRIES.exists():
+        print(f"warning: pack file not found: {PACK_ENTRIES}", file=sys.stderr)
         return []
-    entries = re.split(r"(?m)^#{2,3} (?=ASB-)", PACK_ENTRIES.read_text(encoding="utf-8"))[1:]
+    entries = re.split(r"(?m)^#{2,3} (?=ASD-)", PACK_ENTRIES.read_text(encoding="utf-8"))[1:]
     hits = []
     for entry in entries:
         vendor = re.search(r"\*\*Vendor:\*\*\s*\S*@([0-9a-f]{12})", entry)

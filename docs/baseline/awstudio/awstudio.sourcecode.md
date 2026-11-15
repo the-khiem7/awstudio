@@ -1,24 +1,24 @@
 ---
 baseline_schema: "3.0"
-pack: "awsandbox"
+pack: "awstudio"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-15"
-code_ref: "e69d991"
+code_ref: "uncommitted"
 ---
 
-# awsandbox - source code
+# awstudio - source code
 
 Everything under "Planned" is design, not implemented code unless "Implemented in Phase 0", "Implemented in Phase 1" or "Implemented in Phase 2" lists it. "Vendor topology" describes the pinned submodule as inspected.
 
 ## Implemented in Phase 0
 
-Committed in `d535a96`; verified items are in the Phase 0 checkpoint of `awsandbox.roadmap.md`.
+Committed in `d535a96`; verified items are in the Phase 0 checkpoint of `awstudio.roadmap.md`.
 
 | Path | Role |
 |---|---|
 | `src/main.tsx`, `src/App.tsx` | React 18 entry and an empty Cloudscape `AppLayout` |
-| `src-tauri/src/lib.rs` | Tauri builder; `crate-type` is `rlib` only (ASB-D20) |
+| `src-tauri/src/lib.rs` | Tauri builder; `crate-type` is `rlib` only (ASD-D20) |
 | `src-tauri/src/emulator_tls.rs` | `sts_client`: empty trust store plus the emulator CA, static keys, endpoint override; removed in Phase 2, replaced by `aws.rs` |
 | `src-tauri/tauri.conf.json` | Strict CSP, `bundle.active` false, dev server `127.0.0.1:1420` |
 | `machines/_default.toml`, `scripts/machine.ps1` | Default profile and the loader that exports `RUSTUP_TOOLCHAIN` and `PATH` |
@@ -28,7 +28,7 @@ Committed in `d535a96`; verified items are in the Phase 0 checkpoint of `awsandb
 
 ## Implemented in Phase 1
 
-Committed in `2fb042d` and `22ee71e`; verification is in the Phase 1 checkpoint of `awsandbox.roadmap.md`.
+Committed in `2fb042d` and `22ee71e`; verification is in the Phase 1 checkpoint of `awstudio.roadmap.md`.
 
 | Path | Role |
 |---|---|
@@ -45,7 +45,7 @@ Committed in `2fb042d` and `22ee71e`; verification is in the Phase 1 checkpoint 
 
 ## Implemented in Phase 2
 
-Committed in `80a18b6`, `5dc0e1c`, `4f12a55` and `632ca58`; verification is in the Phase 2 checkpoint of `awsandbox.roadmap.md`.
+Committed in `80a18b6`, `5dc0e1c`, `4f12a55` and `632ca58`; verification is in the Phase 2 checkpoint of `awstudio.roadmap.md`.
 
 | Path | Role |
 |---|---|
@@ -54,7 +54,7 @@ Committed in `80a18b6`, `5dc0e1c`, `4f12a55` and `632ca58`; verification is in t
 | `src-tauri/src/env.rs` | `CLEARED` variables, `variables`, PowerShell and cmd `block`, `open_terminal` (new console, argument array) |
 | `src-tauri/src/commands.rs` | Adds `session_info`, `session_check`, `env_block`, `open_terminal`; `Runtime.clients` cached per run, dropped on stop and target change, preloaded after start and restart |
 | `src-tauri/src/lib.rs` | `bindings()` registry shared by the app and the export; debug runs export to `src/bindings.ts` |
-| `src-tauri/build.rs` | Links the Windows resource into integration test binaries (ASB-D23) |
+| `src-tauri/build.rs` | Links the Windows resource into integration test binaries (ASD-D23) |
 | `src-tauri/tests/bindings.rs`, `tests/live_session.rs` | Bindings freshness check; ignored live STS, S3, restart, CLI environment and region probe |
 | `src/bindings.ts` | Generated, committed; `src/runtime/api.ts` now wraps it |
 | `src/runtime/SdkAccess.tsx` | Endpoint, region, files folder, "Test connection", environment tabs with copy, "Open terminal with emulator environment" |
@@ -63,7 +63,7 @@ Committed in `80a18b6`, `5dc0e1c`, `4f12a55` and `632ca58`; verification is in t
 
 ```mermaid
 flowchart LR
-  subgraph App[awsandbox - Tauri v2]
+  subgraph App[awstudio - Tauri v2]
     UI[WebView: React 18 + Cloudscape]
     BE[Rust backend]
   end
@@ -81,7 +81,7 @@ flowchart LR
   NT --> EM
 ```
 
-- Keys and CA stay in `Session`; the WebView receives DTOs only (ASB-D17 in `awsandbox.hallucination.md`).
+- Keys and CA stay in `Session`; the WebView receives DTOs only (ASD-D17 in `awstudio.hallucination.md`).
 - The WebView never opens an emulator URL; downloads and presigned URLs go through the backend.
 
 ## Planned repository layout
@@ -138,7 +138,7 @@ flowchart LR
 
 **Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
 
-| Path in `vendor/aws-emulator` | Use for awsandbox |
+| Path in `vendor/aws-emulator` | Use for awstudio |
 |---|---|
 | `services/service-<name>/smithy-model/*.json` | Operation list, shapes, API Console forms |
 | `services/service-<name>/src/ops/<op>.rs` | `not_implemented("...")` variant messages |

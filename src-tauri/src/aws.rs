@@ -271,7 +271,7 @@ mod tests {
     }
 
     fn test_session(endpoint_url: &str) -> Session {
-        let dir = std::env::temp_dir().join(format!("awsandbox-guard-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("awstudio-guard-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join(crate::provider::CA_FILE), TEST_CA).unwrap();
         std::fs::write(

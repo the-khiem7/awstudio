@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     fn round_trip() {
-        let dir = std::env::temp_dir().join("awsandbox-settings-test");
+        let dir = std::env::temp_dir().join("awstudio-settings-test");
         let mut s = Settings::default();
         s.port = 9300;
         save(&dir, &s).unwrap();

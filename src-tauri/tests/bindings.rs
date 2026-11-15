@@ -6,9 +6,9 @@
 
 #[test]
 fn committed_bindings_match_the_commands() {
-    let path = awsandbox_lib::bindings_path();
+    let path = awstudio_lib::bindings_path();
     let before = std::fs::read_to_string(&path).unwrap_or_default();
-    awsandbox_lib::export_bindings(&awsandbox_lib::bindings()).expect("export bindings");
+    awstudio_lib::export_bindings(&awstudio_lib::bindings()).expect("export bindings");
     let after = std::fs::read_to_string(&path).expect("read bindings");
     assert!(
         before.replace("\r\n", "\n") == after.replace("\r\n", "\n"),

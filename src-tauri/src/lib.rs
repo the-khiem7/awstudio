@@ -51,5 +51,5 @@ pub fn run() {
         .setup(|app| commands::setup(app))
         .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
-        .expect("error while running awsandbox");
+        .expect("error while running AWStudio");
 }

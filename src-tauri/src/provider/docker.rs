@@ -69,11 +69,11 @@ pub fn to_engine_path(kind: EngineKind, path: &str) -> String {
 }
 
 pub fn image_tag(version: &str) -> String {
-    format!("awsandbox-emulator:{version}")
+    format!("awstudio-emulator:{version}")
 }
 
 pub fn container_name(port: u16) -> String {
-    format!("awsandbox-emulator-{port}")
+    format!("awstudio-emulator-{port}")
 }
 
 fn valid_version(v: &str) -> bool {

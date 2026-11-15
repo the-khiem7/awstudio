@@ -1,8 +1,8 @@
-# awsandbox
+# AWStudio
 
 A desktop app that gives [AWS Emulator](https://github.com/aws/aws-emulator) the same experience as the AWS Management Console, locally. It is built with Tauri v2, React 18 and [Cloudscape](https://cloudscape.design).
 
-awsandbox is an independent project. It is not affiliated with, endorsed by, or sponsored by Amazon Web Services, Inc. or its affiliates. "AWS" and "Amazon Web Services" are trademarks of Amazon.com, Inc. or its affiliates.
+AWStudio is an independent project. It is not affiliated with, endorsed by, or sponsored by Amazon Web Services, Inc. or its affiliates. "AWS" and "Amazon Web Services" are trademarks of Amazon.com, Inc. or its affiliates.
 
 ## Status
 
@@ -12,7 +12,7 @@ The backend signs with the keys each emulator run writes, trusts only that run's
 
 ## Telemetry
 
-AWS Emulator reports usage data to AWS by default, and awsandbox keeps that default. Telemetry is described in [Telemetry in AWS Emulator](https://docs.aws.amazon.com/emulator/latest/userguide/telemetry.html). To turn it off, start the emulator with `--telemetry off` or set `EMULATOR_TELEMETRY=off`.
+AWS Emulator reports usage data to AWS by default, and AWStudio keeps that default. Telemetry is described in [Telemetry in AWS Emulator](https://docs.aws.amazon.com/emulator/latest/userguide/telemetry.html). To turn it off, start the emulator with `--telemetry off` or set `EMULATOR_TELEMETRY=off`.
 
 ## Develop
 

@@ -163,7 +163,7 @@ mod tests {
     }
 
     fn temp(name: &str) -> PathBuf {
-        let d = std::env::temp_dir().join(format!("awsandbox-session-{name}-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("awstudio-session-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
         d
     }

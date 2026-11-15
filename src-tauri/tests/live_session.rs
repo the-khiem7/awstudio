@@ -2,11 +2,11 @@
 //! for the same reasons as `live_providers`. Run with
 //! `cargo test --test live_session -- --ignored --nocapture --test-threads=1`.
 
-use awsandbox_lib::aws::{map_sdk_error, Clients};
-use awsandbox_lib::env;
-use awsandbox_lib::provider::docker::DockerProvider;
-use awsandbox_lib::provider::{Provider, StartOptions, DEFAULT_MEMORY_LIMIT};
-use awsandbox_lib::session::Session;
+use awstudio_lib::aws::{map_sdk_error, Clients};
+use awstudio_lib::env;
+use awstudio_lib::provider::docker::DockerProvider;
+use awstudio_lib::provider::{Provider, StartOptions, DEFAULT_MEMORY_LIMIT};
+use awstudio_lib::session::Session;
 use std::process::Command;
 
 const PORT: u16 = 9297;
@@ -87,7 +87,7 @@ fn cli_environment_works_and_region_partitioning_is_reported() {
     assert!(id.status.success(), "aws sts get-caller-identity: {}", String::from_utf8_lossy(&id.stderr));
     assert!(String::from_utf8_lossy(&id.stdout).contains("000000000000"));
 
-    let name = "awsandbox-region-probe";
+    let name = "awstudio-region-probe";
     let mut urls = Vec::new();
     for region in ["us-east-1", "eu-west-1"] {
         let out = aws_cli(&vars, &["sqs", "create-queue", "--queue-name", name, "--region", region]);

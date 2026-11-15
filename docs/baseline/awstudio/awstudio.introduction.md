@@ -1,28 +1,28 @@
 ---
 baseline_schema: "3.0"
-pack: "awsandbox"
+pack: "awstudio"
 document: "introduction"
 status: "active"
 updated: "2026-11-15"
-code_ref: "e69d991"
+code_ref: "uncommitted"
 ---
 
-# awsandbox - introduction
+# awstudio - introduction
 
 ## Scope
 
-`awsandbox` is a Tauri v2 desktop app (Windows first, Linux deferred, ASB-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awsandbox.hallucination.md` ASB-D1 to ASB-D24.
+`awstudio` is a Tauri v2 desktop app (Windows first, Linux deferred, ASD-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awstudio.hallucination.md` ASD-D1 to ASD-D24.
 
 In scope:
 
-- Emulator lifecycle (start, stop, restart, health, logs, version check) through runtime providers (ASB-D4).
+- Emulator lifecycle (start, stop, restart, health, logs, version check) through runtime providers (ASD-D4).
 - Console shell: top navigation, services menu and search, region selector, breadcrumbs, flashbar, help panel, unified settings, Console Home.
-- Console-parity pages for 11 services; SSM as far as the emulator supports it (ASB-D8).
-- A generic API Console for the other modeled services (ASB-D8).
-- A capability matrix that decides which controls are functional (ASB-D9).
-- Vendor pinning and drift reports (ASB-D13).
+- Console-parity pages for 11 services; SSM as far as the emulator supports it (ASD-D8).
+- A generic API Console for the other modeled services (ASD-D8).
+- A capability matrix that decides which controls are functional (ASD-D9).
+- Vendor pinning and drift reports (ASD-D13).
 
-Out of scope until after packaging: embedded mode (ASB-D5).
+Out of scope until after packaging: embedded mode (ASD-D5).
 
 ## Current truth
 
@@ -67,7 +67,7 @@ Out of scope until after packaging: embedded mode (ASB-D5).
 
 **Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
 
-Tiers per ASB-D9 thresholds, before the unscored-operation rule and variant gating are applied.
+Tiers per ASD-D9 thresholds, before the unscored-operation rule and variant gating are applied.
 
 | Service | Ops | Green / Yellow / Red / Unscored |
 |---|---|---|
@@ -100,12 +100,12 @@ SSM by console area:
 
 ## Constraints
 
-- Public repository: no machine names, company names, company accounts or internal paths in tracked files (ASB-D15).
-- Machine profiles other than `machines/_default.toml` are gitignored (ASB-D6).
-- Builds must not need elevation on a machine without MSVC Build Tools (ASB-D6).
-- Windows with the Docker provider is the only supported target for now; avoid Windows-only assumptions in shared code where cheap, but build nothing for Linux yet (ASB-D7).
-- The submodule pin is restricted to tags with an LTS package (ASB-D18); builds stay unsigned until packaging (ASB-D19).
+- Public repository: no machine names, company names, company accounts or internal paths in tracked files (ASD-D15).
+- Machine profiles other than `machines/_default.toml` are gitignored (ASD-D6).
+- Builds must not need elevation on a machine without MSVC Build Tools (ASD-D6).
+- Windows with the Docker provider is the only supported target for now; avoid Windows-only assumptions in shared code where cheap, but build nothing for Linux yet (ASD-D7).
+- The submodule pin is restricted to tags with an LTS package (ASD-D18); builds stay unsigned until packaging (ASD-D19).
 - The app never redistributes the emulator package or image; the image is built on the user's machine from the AWS download URL. The license of the binary package is not stated in the docs.
 - Cloudscape is Apache-2.0: ship its NOTICE in the About page.
-- The `docker` command may be a shim into a WSL2 distro; Windows host paths must be translated for bind mounts and ports reach Windows through WSL2 localhost forwarding (ASB-D4).
+- The `docker` command may be a shim into a WSL2 distro; Windows host paths must be translated for bind mounts and ports reach Windows through WSL2 localhost forwarding (ASD-D4).
 - Some agent environments block shell commands that mention credential file paths; keep the emulator key filename in one constant and test with temporary fake files.

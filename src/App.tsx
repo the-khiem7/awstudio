@@ -9,7 +9,7 @@ export function App() {
       toolsHide
       content={
         <>
-          <Header variant="h1">awsandbox</Header>
+          <Header variant="h1">AWStudio</Header>
           <Runtime />
         </>
       }

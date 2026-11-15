@@ -1,11 +1,11 @@
 [package]
-name = "awsandbox"
+name = "awstudio"
 version = "0.0.0"
 description = "Local AWS Console experience over aws-emulator"
 edition = "2021"
 
 [lib]
-name = "awsandbox_lib"
+name = "awstudio_lib"
 crate-type = ["rlib"]
 
 [build-dependencies]
