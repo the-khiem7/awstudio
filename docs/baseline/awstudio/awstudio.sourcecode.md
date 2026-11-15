@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-15"
-code_ref: "52fe16d"
+code_ref: "8ce1a04"
 ---
 
 # awstudio - source code
@@ -61,7 +61,7 @@ Committed in `80a18b6`, `5dc0e1c`, `4f12a55` and `632ca58`; verification is in t
 
 ## Implemented in Phase 3
 
-Committed in `11a6413` to `52fe16d`; verification is in the Phase 3 checkpoint of `awstudio.roadmap.md`.
+Committed in `11a6413` to `52fe16d`, navigation guard in `8ce1a04`; verification is in the Phase 3 checkpoint of `awstudio.roadmap.md`.
 
 | Path | Role |
 |---|---|
@@ -69,7 +69,7 @@ Committed in `11a6413` to `52fe16d`; verification is in the Phase 3 checkpoint o
 | `src/capability/capability.json` | Generated, committed; loaded as a separate chunk |
 | `src/capability/index.tsx` | `CapabilityProvider` (run-scoped 501 cache), `useCapability("svc:Op", variant?)`, `judge`, `variantUnsupported`, `reportUnsupported`, `tierCounts` |
 | `src/runtime/RuntimeStatus.tsx` | App-wide status poll (2 s), `runId`, `markLifecycle`, version check once per run |
-| `src/shell/` | `TopNav`, `ConsolePage` (AppLayoutToolbar per route, help, split panel slot), hash `router`, `services` (11 services, console paths), `regions`, `preferences` (unified settings in localStorage), `notifications`, `GlobalNotices` (telemetry, version mismatch), `storage` |
+| `src/shell/` | `TopNav`, `ConsolePage` (AppLayoutToolbar per route, help, split panel slot), hash `router` (with `setNavigationGuard`, one capture `hashchange` listener registered at module load that holds a navigation for a dirty form, ASD-D25), `services` (11 services, console paths), `regions`, `preferences` (unified settings in localStorage), `notifications`, `GlobalNotices` (telemetry, version mismatch), `storage` |
 | `src/patterns/` | `gating` (`UiOnlyScope`, `GatedButton`, `UnsupportedBanner`), `ResourceTable`, `DetailsPage`, `CreateForm`, `CreateWizard`, `unsaved`, `DeleteModal`, `ManageTags`, `S3Picker`, `ServiceDashboard`, `ComparisonSplitPanel`, `table-common` (date filter form) |
 | `src/pages/` | `ConsoleHome` (board), `EmulatorPage`, `SettingsPage`, `ServiceLanding` (support table per service), `PatternGallery` (dev builds only) |
 | `src/App.tsx` | Providers, sticky `#top-nav`, routes |

@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "hallucination"
 status: "active"
 updated: "2026-11-15"
-code_ref: "52fe16d"
+code_ref: "8ce1a04"
 ---
 
 # awstudio - decisions and open questions
@@ -39,6 +39,7 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASD-D22 | External agent skills tauri-v2 and modern-web-guidance not adopted | closed | ASD-D2, ASD-D17, ASD-D20 |
 | ASD-D23 | Lesson: test binaries linking the Tauri runtime fail to load on Windows | lesson | ASD-D20 |
 | ASD-D24 | Default container memory limit stays at the upstream 2g | closed | ASD-D4, ASD-Q6 |
+| ASD-D25 | Lesson: a capture-phase hashchange listener on window does not run before earlier listeners | lesson | ASD-D3 |
 | ASD-Q7 | Native provider install source: no DEB package URL known | open, deferred | ASD-D4, ASD-D7 |
 | ASD-Q8 | Capability matrix service key: SDK id slug or endpoint prefix | open | ASD-D9, ASD-D13 |
 | ASD-Q9 | Capability matrix scope: every modeled service or the 11 console services | open | ASD-D8, ASD-D9 |
@@ -282,6 +283,13 @@ Closes ASD-Q6.
 - Why: keep upstream behavior [user]; idle use measured about 180 MiB (`docker stats`, 3 samples, version 1.0.382, `--telemetry off`), so `2g` is about 11 times idle [agent].
 - What breaks if ignored: a container over its limit exits 137 and every emulated resource is lost.
 - Rejected: `1g` (about 5.5 times idle, smaller footprint) - not measured under load, and the owner keeps the upstream value [user].
+
+### ASD-D25: Lesson: a capture-phase hashchange listener on window does not run before earlier listeners
+
+- Believed: `useUnsavedChanges` could hold a hash change on a dirty form with its own `window` `hashchange` listener registered with `{ capture: true }`, calling `stopImmediatePropagation()` and restoring the hash before the router's `useLocation` listener rendered the other route (Phase 3 task 6).
+- Why it looked reasonable: capture listeners run before bubble listeners on ancestors, and the listener was registered and reached.
+- What disproved it: `hashchange` is dispatched at `window` itself, and at the target listeners fire in registration order whatever their capture flag. Measured in headless Edge 157: an earlier bubble listener ran before a later capture listener. The router's listener mounts before the form's, so the route changed first; repro `#/dev/patterns/create`, type a name, `location.hash = "#/"` ended on `#/` with no Leave page modal.
+- Fix: the router registers one capture listener when its module loads, ahead of every component listener, and exposes `setNavigationGuard`; the hook installs a guard that returns true to hold the change, and the router restores `e.oldURL`'s hash and stops the event. The same probe now stays on `#/dev/patterns/create` with the modal shown; with the old files it fails. [agent]
 
 ## Open questions
 

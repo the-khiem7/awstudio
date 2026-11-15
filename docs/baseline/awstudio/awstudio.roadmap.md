@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "roadmap"
 status: "active"
 updated: "2026-11-15"
-code_ref: "52fe16d"
+code_ref: "8ce1a04"
 ---
 
 # awstudio - roadmap
@@ -148,7 +148,7 @@ Acceptance:
 - A UI-only page shows the empty table, the "Not supported by AWS Emulator vX" banner and disabled actions.
 - A green control calls the backend; a red control is disabled with its reason.
 
-Checkpoint (tasks 1 to 7 implemented, committed in `11a6413`, `dc3cb58`, `147ba03`, `689a5fd`, `cacf9d5`, `76256ab`, `b53d859`, `52fe16d`; phase not closed):
+Checkpoint (tasks 1 to 7 implemented, committed in `11a6413`, `dc3cb58`, `147ba03`, `689a5fd`, `cacf9d5`, `76256ab`, `b53d859`, `52fe16d`; unsaved-changes guard fixed in `8ce1a04`; phase not closed, waiting on ASD-Q8, ASD-Q9, ASD-Q10 and approval):
 
 | Acceptance | State |
 |---|---|
@@ -157,10 +157,12 @@ Checkpoint (tasks 1 to 7 implemented, committed in `11a6413`, `dc3cb58`, `147ba0
 
 - Tasks: 1 `tools/capability-gen/capability_gen.py` writes `src/capability/capability.json` (436 services, 19451 operations, key = SDK id slug, ASD-Q8; every modeled service, ASD-Q9); 2 `useCapability`, `judge`, `reportUnsupported`, run-scoped 501 cache reset by `runId` of the app-wide `RuntimeStatusProvider`; 3 shell under `src/shell/` (TopNavigation with `LOCAL` logo badge, service search with Alt+S, Services menu, Emulator status button, Region menu, account menu, `ConsolePage` with breadcrumbs, Flashbar, help panel, split panel slot, Unified Settings page); 4 Console Home board (Recently visited, Emulator health, Emulator fidelity); 5 Emulator page wrapping `Runtime` with Version and Telemetry fields, telemetry notice and version-mismatch notice moved to the shell; 6 13 patterns under `src/patterns/`; 7 hash routes `#/`, `#/emulator`, `#/settings`, a support landing page per console service path, `#/dev/patterns/<pattern>` in dev builds only.
 - Evidence: `uv run tools/capability-gen/capability_gen.py --summary` twice, byte-identical output; `npm run build` passed (capability chunk 1176.54 kB, no gallery chunk in the release build); dev app (`scripts/dev.ps1`) driven over WebView2 remote debugging: every route and all 13 gallery pages rendered with no exception, Start reached running in 9 s, version 1.0.382 matched the pin, Unified Settings dark and compact applied and persisted.
-- Defect, open: the unsaved-changes guard (`useUnsavedChanges`) does not hold a hash change on a dirty create form; repro: `#/dev/patterns/create`, type a name, set `location.hash = "#/"`; the route changes to Console Home and no Leave page modal shows, although the capture-phase `hashchange` listener is registered. Cause not found.
-- Not verified: the run-time 501 cache (no backend command reaches a 501 operation); Region menu selection; service search; the version-mismatch notice; inline edit submit, comparison split panel with a selection, wizard steps, delete consent, tag saving, S3 picker modal, board drag and resize; the release build window; Windows CI of this code.
-- Risk: backend errors name the bare operation (`GetCallerIdentity`), so a cached 501 also disables same-named operations of other services; Phase 4 commands should report `service:Operation`. The selected Region is frontend state only until service commands take a Region. Unified settings live in WebView localStorage, not `settings.json`. CommitKit's scan flags `tokenType` in the property-filter operator list as a credential (false positive).
-- Changed files: `.gitignore`, `package.json`, `package-lock.json` (`@cloudscape-design/board-components` `3.0.247`), `tools/capability-gen/capability_gen.py`, `src/capability/` (`capability.json`, `types.ts`, `index.tsx`), `src/runtime/RuntimeStatus.tsx`, `src/runtime/Runtime.tsx`, `src/shell/`, `src/patterns/`, `src/pages/`, `src/App.tsx`.
+- Defect, fixed in `8ce1a04`: the unsaved-changes guard (`useUnsavedChanges`) did not hold a hash change on a dirty create form; cause and fix in ASD-D25. Repro `#/dev/patterns/create`, type a name, `location.hash = "#/"` now stays on the form with the Leave page modal; with the old files the same script ends on `#/`.
+- Verified after the fix (dev server, headless Edge 157 over remote debugging, 1600x1000 viewport, real input and pointer events): Leave and Cancel in the Leave page modal; Cancel on a dirty form opens the modal; wizard blocks Next without a name, holds a navigation when dirty, steps to Set permissions and Review, submit goes to `#/dev/patterns/gating`; typed delete stays disabled until the exact name `fixture-01` is typed, deletes and closes, simple delete enabled; inline edit opens, submits through the async save and closes (fixture rows do not keep the value by design); comparison split panel shows `2 fixtures selected` and Compare details; tag add and Save changes navigate to the gallery; S3 read picker opens, browses `fixture-bucket` and writes `s3://fixture-bucket/readme.txt` back; Region menu selects Ireland `eu-west-1`, stores it as `awstudio.region` and keeps it after reload; Services menu lists Console Home and the 11 services; Alt+S focuses service search, `queue` offers Simple Queue Service, selecting it opens `#/sqs`; Console Home board drag swapped Recently visited and Emulator health and resize changed `health` from 2x3 to 1x5, both stored in `awstudio.home.layout`; no console errors.
+- Verified in the release window (`scripts/build.ps1 --no-bundle`, 2m16s, `awstudio.exe` driven over WebView2 remote debugging): Console Home and the LOCAL badge render; `#/dev/patterns/gating` shows Page not found; `provider_start` started the Docker emulator, version 1.0.382 matched the pin, `session_check` answered account `000000000000`; Emulator page shows Running, healthy, matches the pinned build; `#/sqs` landing shows 19 of 23 operations supported.
+- Not verified: the run-time 501 cache (no backend command reaches a 501 operation until Phase 4); the version-mismatch notice (needs an image at another version); Windows CI of this code (push not authorized).
+- Risk: backend errors name the bare operation (`GetCallerIdentity`), so a cached 501 also disables same-named operations of other services; Phase 4 commands should report `service:Operation`. The selected Region is frontend state only until service commands take a Region. Unified settings live in WebView localStorage, not `settings.json`. CommitKit's scan flags `tokenType` in the property-filter operator list as a credential (false positive). Only one navigation guard is active at a time, so two dirty guarded forms mounted together leave only the newer one guarding.
+- Changed files: `.gitignore`, `package.json`, `package-lock.json` (`@cloudscape-design/board-components` `3.0.247`), `tools/capability-gen/capability_gen.py`, `src/capability/` (`capability.json`, `types.ts`, `index.tsx`), `src/runtime/RuntimeStatus.tsx`, `src/runtime/Runtime.tsx`, `src/shell/` (`router.ts` navigation guard added in `8ce1a04`), `src/patterns/` (`unsaved.tsx` changed in `8ce1a04`), `src/pages/`, `src/App.tsx`.
 
 ## Phase 4: Services wave 1: S3, DynamoDB, SQS, SNS
 
@@ -229,4 +231,4 @@ Deferred by ASD-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 
 ## Next action
 
-Phase 3 is implemented and committed but not closed. Fix the unsaved-changes guard defect recorded in the Phase 3 checkpoint, verify the items listed there as not verified, answer ASD-Q8, ASD-Q9 and ASD-Q10, then ask for Phase 3 approval. The Docker emulator is left running for that work. Pushing for CI of Phase 2 and Phase 3 code is not yet authorized.
+Phase 3 is implemented, committed and verified except the items its checkpoint lists as not verified, which wait on Phase 4 commands, a mismatched image, or a push. The unsaved-changes guard defect is fixed (ASD-D25). Answer ASD-Q8, ASD-Q9 and ASD-Q10, then approve Phase 3 to close it; Phase 4 starts after that. The Docker emulator is left running. Pushing for CI of Phase 2 and Phase 3 code is not yet authorized.
