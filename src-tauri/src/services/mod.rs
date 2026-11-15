@@ -3,6 +3,8 @@
 //! its failures as [`ApiError`] with the operation named `service:Operation`.
 
 pub mod dynamodb;
+pub mod iam;
+pub mod lambda;
 pub mod s3;
 pub mod sns;
 pub mod sqs;

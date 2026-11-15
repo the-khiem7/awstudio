@@ -13,6 +13,8 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 aws-sdk-dynamodb = "1.139.0"
+aws-sdk-iam = "1.136.0"
+aws-sdk-lambda = "1.159.0"
 aws-sdk-s3 = "1.159.0"
 aws-sdk-sns = "1.123.0"
 aws-sdk-sqs = "1.121.0"
@@ -28,4 +30,5 @@ specta-typescript = "0.0.15"
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2.8.4"
 tauri-specta = { version = "=2.0.0-rc.29", features = ["derive", "typescript"] }
-tokio = { version = "1.54.1", features = ["fs", "io-util"] }
+tokio = { version = "1.54.1", features = ["fs", "io-util", "time"] }
+zip = { version = "9.6.0", default-features = false, features = ["deflate"] }

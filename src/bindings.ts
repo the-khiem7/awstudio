@@ -151,9 +151,114 @@ export const commands = {
 	snsListTags: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("sns_list_tags", { region, arn }, options),
 	/**  Sets `set` and removes `remove`, the difference the "Manage tags" page saves. */
 	snsUpdateTags: (region: string, arn: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("sns_update_tags", { region, arn, set, remove }, options),
+	/**  The account summary: resource counts and quotas by their API names (`Users`, `UsersQuota`). */
+	iamAccountSummary: (options?: InvokeOptions) => __TAURI_INVOKE<{ [key in string]: number | null }>("iam_account_summary", undefined, options),
+	iamListUsers: (options?: InvokeOptions) => __TAURI_INVOKE<IamUser_Serialize[]>("iam_list_users", undefined, options),
+	iamGetUser: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<IamUser_Serialize>("iam_get_user", { name }, options),
+	iamCreateUser: (input: CreateUserInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("iam_create_user", { input }, options),
+	/**
+	 *  Deletes a user after removing everything IAM refuses to delete it with: access keys, inline
+	 *  and attached policies, group memberships and the console password, as the console does.
+	 */
+	iamDeleteUser: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_delete_user", { name }, options),
+	iamListGroupsForUser: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<IamGroup_Serialize[]>("iam_list_groups_for_user", { name }, options),
+	iamAddUserToGroup: (group: string, user: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_add_user_to_group", { group, user }, options),
+	iamRemoveUserFromGroup: (group: string, user: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_remove_user_from_group", { group, user }, options),
+	iamListGroups: (options?: InvokeOptions) => __TAURI_INVOKE<IamGroup_Serialize[]>("iam_list_groups", undefined, options),
+	iamGetGroup: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<IamGroupDetails_Serialize>("iam_get_group", { name }, options),
+	iamCreateGroup: (input: CreateGroupInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("iam_create_group", { input }, options),
+	/**  Deletes a group after removing its members, attached policies and inline policies. */
+	iamDeleteGroup: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_delete_group", { name }, options),
+	iamListRoles: (options?: InvokeOptions) => __TAURI_INVOKE<IamRole_Serialize[]>("iam_list_roles", undefined, options),
+	iamGetRole: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<IamRole_Serialize>("iam_get_role", { name }, options),
+	iamCreateRole: (input: CreateRoleInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("iam_create_role", { input }, options),
+	/**
+	 *  Deletes a role after detaching its managed policies, deleting its inline policies and taking it
+	 *  out of instance profiles.
+	 */
+	iamDeleteRole: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_delete_role", { name }, options),
+	iamUpdateAssumeRolePolicy: (name: string, document: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_update_assume_role_policy", { name, document }, options),
+	iamUpdateRole: (name: string, description: string, maxSessionDuration: number | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_update_role", { name, description, maxSessionDuration }, options),
+	/**  Tags of a user, role or managed policy. `id` is the name, or the ARN for a policy. */
+	iamListTags: (kind: TaggableKind, id: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("iam_list_tags", { kind, id }, options),
+	iamUpdateTags: (kind: TaggableKind, id: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_update_tags", { kind, id, set, remove }, options),
+	iamListAttachedPolicies: (kind: PrincipalKind, name: string, options?: InvokeOptions) => __TAURI_INVOKE<AttachedPolicy[]>("iam_list_attached_policies", { kind, name }, options),
+	iamAttachPolicy: (kind: PrincipalKind, name: string, policyArn: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_attach_policy", { kind, name, policyArn }, options),
+	iamDetachPolicy: (kind: PrincipalKind, name: string, policyArn: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_detach_policy", { kind, name, policyArn }, options),
+	iamListInlinePolicies: (kind: PrincipalKind, name: string, options?: InvokeOptions) => __TAURI_INVOKE<string[]>("iam_list_inline_policies", { kind, name }, options),
+	iamGetInlinePolicy: (kind: PrincipalKind, name: string, policy: string, options?: InvokeOptions) => __TAURI_INVOKE<string>("iam_get_inline_policy", { kind, name, policy }, options),
+	iamPutInlinePolicy: (kind: PrincipalKind, name: string, policy: string, document: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_put_inline_policy", { kind, name, policy, document }, options),
+	iamDeleteInlinePolicy: (kind: PrincipalKind, name: string, policy: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_delete_inline_policy", { kind, name, policy }, options),
+	/**
+	 *  Managed policies of a scope: `local` (customer managed), `aws` or `all`. `only_attached` keeps
+	 *  the ones attached to at least one user, group or role.
+	 */
+	iamListPolicies: (scope: string, onlyAttached: boolean, options?: InvokeOptions) => __TAURI_INVOKE<IamPolicy_Serialize[]>("iam_list_policies", { scope, onlyAttached }, options),
+	iamGetPolicy: (arn: string, options?: InvokeOptions) => __TAURI_INVOKE<IamPolicyDetails_Serialize>("iam_get_policy", { arn }, options),
+	iamCreatePolicy: (input: CreatePolicyInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("iam_create_policy", { input }, options),
+	iamListPolicyVersions: (arn: string, options?: InvokeOptions) => __TAURI_INVOKE<PolicyVersion_Serialize[]>("iam_list_policy_versions", { arn }, options),
+	iamGetPolicyVersion: (arn: string, version: string, options?: InvokeOptions) => __TAURI_INVOKE<string>("iam_get_policy_version", { arn, version }, options),
+	/**
+	 *  Adds a version holding `document` and makes it the default; IAM keeps at most five versions, so
+	 *  the caller deletes one first when the policy already has five.
+	 */
+	iamCreatePolicyVersion: (arn: string, document: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_create_policy_version", { arn, document }, options),
+	iamSetDefaultPolicyVersion: (arn: string, version: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_set_default_policy_version", { arn, version }, options),
+	iamDeletePolicyVersion: (arn: string, version: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_delete_policy_version", { arn, version }, options),
+	/**  Deletes a policy after its non-default versions, which IAM requires first. */
+	iamDeletePolicy: (arn: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_delete_policy", { arn }, options),
+	/**  The users, groups and roles a policy is attached to. */
+	iamListPolicyEntities: (arn: string, options?: InvokeOptions) => __TAURI_INVOKE<PolicyEntity[]>("iam_list_policy_entities", { arn }, options),
+	iamListAccessKeys: (user: string, options?: InvokeOptions) => __TAURI_INVOKE<AccessKeyInfo_Serialize[]>("iam_list_access_keys", { user }, options),
+	iamCreateAccessKey: (user: string, options?: InvokeOptions) => __TAURI_INVOKE<NewAccessKey>("iam_create_access_key", { user }, options),
+	iamSetAccessKeyStatus: (user: string, id: string, active: boolean, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_set_access_key_status", { user, id, active }, options),
+	iamDeleteAccessKey: (user: string, id: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("iam_delete_access_key", { user, id }, options),
+	lambdaAccountSettings: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<LambdaAccount>("lambda_account_settings", { region }, options),
+	lambdaListFunctions: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<LambdaFunction_Serialize[]>("lambda_list_functions", { region }, options),
+	lambdaGetFunction: (region: string, name: string, qualifier: string | null, options?: InvokeOptions) => __TAURI_INVOKE<LambdaFunctionDetails_Serialize>("lambda_get_function", { region, name, qualifier }, options),
+	lambdaCreateFunction: (region: string, input: CreateFunctionInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("lambda_create_function", { region, input }, options),
+	lambdaDeleteFunction: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("lambda_delete_function", { region, name }, options),
+	lambdaUpdateConfiguration: (region: string, name: string, input: UpdateConfigurationInput, options?: InvokeOptions) => __TAURI_INVOKE<null>("lambda_update_configuration", { region, name, input }, options),
+	lambdaGetFunctionCode: (region: string, name: string, qualifier: string | null, options?: InvokeOptions) => __TAURI_INVOKE<CodeFile_Serialize[]>("lambda_get_function_code", { region, name, qualifier }, options),
+	/**
+	 *  Packs the files and deploys them with `UpdateFunctionCode`. Files with no text keep the bytes of
+	 *  the package the function holds now.
+	 */
+	lambdaDeployCode: (region: string, name: string, files: CodeFileInput_Deserialize[], options?: InvokeOptions) => __TAURI_INVOKE<LambdaFunction_Serialize>("lambda_deploy_code", { region, name, files }, options),
+	lambdaInvoke: (region: string, name: string, qualifier: string | null, payload: string, options?: InvokeOptions) => __TAURI_INVOKE<InvokeResult_Serialize>("lambda_invoke", { region, name, qualifier, payload }, options),
+	lambdaListVersions: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<LambdaFunction_Serialize[]>("lambda_list_versions", { region, name }, options),
+	/**  Publishes the function's `$LATEST` as a new version and returns its number. */
+	lambdaPublishVersion: (region: string, name: string, description: string | null, options?: InvokeOptions) => __TAURI_INVOKE<string>("lambda_publish_version", { region, name, description }, options),
+	lambdaListAliases: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<LambdaAlias_Serialize[]>("lambda_list_aliases", { region, name }, options),
+	lambdaCreateAlias: (region: string, name: string, alias: string, version: string, description: string | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("lambda_create_alias", { region, name, alias, version, description }, options),
+	lambdaUpdateAlias: (region: string, name: string, alias: string, version: string, description: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("lambda_update_alias", { region, name, alias, version, description }, options),
+	lambdaDeleteAlias: (region: string, name: string, alias: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("lambda_delete_alias", { region, name, alias }, options),
+	lambdaListEventSourceMappings: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<EventSourceMapping_Serialize[]>("lambda_list_event_source_mappings", { region, name }, options),
+	/**  The function URL of a function, or none when it has none. */
+	lambdaGetFunctionUrl: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<FunctionUrl | null>("lambda_get_function_url", { region, name }, options),
+	/**  The function's resource-based policy as JSON text, or none when it has none. */
+	lambdaGetPolicy: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<string | null>("lambda_get_policy", { region, name }, options),
+	lambdaListTags: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("lambda_list_tags", { region, arn }, options),
+	lambdaUpdateTags: (region: string, arn: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("lambda_update_tags", { region, arn, set, remove }, options),
 };
 
 /* Types */
+export type AccessKeyInfo = AccessKeyInfo_Serialize | AccessKeyInfo_Deserialize;
+
+export type AccessKeyInfo_Deserialize = {
+	id: string,
+	/**  `Active` or `Inactive`. */
+	status: string,
+	created?: string | null,
+};
+
+export type AccessKeyInfo_Serialize = {
+	id: string,
+	/**  `Active` or `Inactive`. */
+	status: string,
+	created: string | null,
+};
+
 /**
  *  Error shape of every AWS-facing command. `op` is `service:Operation` with the service key of the
  *  capability matrix, for example `sqs:ListQueues`, so a 501 disables only that service's control.
@@ -196,6 +301,11 @@ export type ApiError_Serialize =
 /**  The command's input was rejected before any request was built, or a local file failed. */
 { kind: "invalid"; detail: string };
 
+export type AttachedPolicy = {
+	name: string,
+	arn: string,
+};
+
 export type BucketEncryption = BucketEncryption_Serialize | BucketEncryption_Deserialize;
 
 export type BucketEncryption_Deserialize = {
@@ -212,12 +322,98 @@ export type BucketEncryption_Serialize = {
 	bucket_key: boolean,
 };
 
+/**  One file of a deployment package as the Code tab shows it. */
+export type CodeFile = CodeFile_Serialize | CodeFile_Deserialize;
+
+/**  One file of the package to deploy: new text, or `None` to keep the bytes the package holds now. */
+export type CodeFileInput = CodeFileInput_Serialize | CodeFileInput_Deserialize;
+
+/**  One file of the package to deploy: new text, or `None` to keep the bytes the package holds now. */
+export type CodeFileInput_Deserialize = {
+	name: string,
+	text?: string | null,
+};
+
+/**  One file of the package to deploy: new text, or `None` to keep the bytes the package holds now. */
+export type CodeFileInput_Serialize = {
+	name: string,
+	text: string | null,
+};
+
+/**  One file of a deployment package as the Code tab shows it. */
+export type CodeFile_Deserialize = {
+	name: string,
+	size: number | null,
+	/**  The file's text; `None` for a file that is binary or too large to edit here. */
+	text?: string | null,
+};
+
+/**  One file of a deployment package as the Code tab shows it. */
+export type CodeFile_Serialize = {
+	name: string,
+	size: number | null,
+	/**  The file's text; `None` for a file that is binary or too large to edit here. */
+	text: string | null,
+};
+
 export type CreateBucketInput = {
 	name: string,
 	versioning: boolean,
 	object_lock: boolean,
 	public_access_block: PublicAccessBlock,
 	tags: Tag[],
+};
+
+export type CreateFunctionInput = CreateFunctionInput_Serialize | CreateFunctionInput_Deserialize;
+
+export type CreateFunctionInput_Deserialize = {
+	name: string,
+	runtime: string,
+	handler: string,
+	/**  ARN of the execution role. */
+	role: string,
+	description?: string | null,
+	architecture: string,
+	memory_size: number | null,
+	timeout: number | null,
+	environment: { [key in string]: string },
+	tags: Tag[],
+	/**  The file inside the package that holds the handler, for example `index.js`. */
+	file_name: string,
+	source: string,
+};
+
+export type CreateFunctionInput_Serialize = {
+	name: string,
+	runtime: string,
+	handler: string,
+	/**  ARN of the execution role. */
+	role: string,
+	description: string | null,
+	architecture: string,
+	memory_size: number | null,
+	timeout: number | null,
+	environment: { [key in string]: string },
+	tags: Tag[],
+	/**  The file inside the package that holds the handler, for example `index.js`. */
+	file_name: string,
+	source: string,
+};
+
+export type CreateGroupInput = CreateGroupInput_Serialize | CreateGroupInput_Deserialize;
+
+export type CreateGroupInput_Deserialize = {
+	name: string,
+	path?: string | null,
+	users: string[],
+	policy_arns: string[],
+};
+
+export type CreateGroupInput_Serialize = {
+	name: string,
+	path: string | null,
+	users: string[],
+	policy_arns: string[],
 };
 
 export type CreateIndexInput = CreateIndexInput_Serialize | CreateIndexInput_Deserialize;
@@ -238,11 +434,51 @@ export type CreateIndexInput_Serialize = {
 	projection: string,
 };
 
+export type CreatePolicyInput = CreatePolicyInput_Serialize | CreatePolicyInput_Deserialize;
+
+export type CreatePolicyInput_Deserialize = {
+	name: string,
+	path?: string | null,
+	description?: string | null,
+	document: string,
+	tags: Tag[],
+};
+
+export type CreatePolicyInput_Serialize = {
+	name: string,
+	path: string | null,
+	description: string | null,
+	document: string,
+	tags: Tag[],
+};
+
 export type CreateQueueInput = {
 	name: string,
 	/**  Queue attributes by their API names (`VisibilityTimeout`, `FifoQueue`, `RedrivePolicy`). */
 	attributes: { [key in string]: string },
 	tags: Tag[],
+};
+
+export type CreateRoleInput = CreateRoleInput_Serialize | CreateRoleInput_Deserialize;
+
+export type CreateRoleInput_Deserialize = {
+	name: string,
+	path?: string | null,
+	description?: string | null,
+	trust_policy: string,
+	max_session_duration?: number | null,
+	tags: Tag[],
+	policy_arns: string[],
+};
+
+export type CreateRoleInput_Serialize = {
+	name: string,
+	path: string | null,
+	description: string | null,
+	trust_policy: string,
+	max_session_duration: number | null,
+	tags: Tag[],
+	policy_arns: string[],
 };
 
 export type CreateTableInput = CreateTableInput_Serialize | CreateTableInput_Deserialize;
@@ -278,6 +514,28 @@ export type CreateTopicInput = {
 	/**  Topic attributes by their API names (`FifoTopic`, `DisplayName`, `Policy`). */
 	attributes: { [key in string]: string },
 	tags: Tag[],
+};
+
+export type CreateUserInput = CreateUserInput_Serialize | CreateUserInput_Deserialize;
+
+export type CreateUserInput_Deserialize = {
+	name: string,
+	path?: string | null,
+	tags: Tag[],
+	/**  Groups the user joins once created. */
+	groups: string[],
+	/**  Managed policies attached once created. */
+	policy_arns: string[],
+};
+
+export type CreateUserInput_Serialize = {
+	name: string,
+	path: string | null,
+	tags: Tag[],
+	/**  Groups the user joins once created. */
+	groups: string[],
+	/**  Managed policies attached once created. */
+	policy_arns: string[],
 };
 
 export type DdbBackup = DdbBackup_Serialize | DdbBackup_Deserialize;
@@ -377,7 +635,176 @@ export type Endpoint = {
 	port: number,
 };
 
+export type EventSourceMapping = EventSourceMapping_Serialize | EventSourceMapping_Deserialize;
+
+export type EventSourceMapping_Deserialize = {
+	uuid: string,
+	event_source_arn?: string | null,
+	state?: string | null,
+	batch_size?: number | null,
+	last_modified?: string | null,
+};
+
+export type EventSourceMapping_Serialize = {
+	uuid: string,
+	event_source_arn: string | null,
+	state: string | null,
+	batch_size: number | null,
+	last_modified: string | null,
+};
+
+export type FunctionUrl = {
+	url: string,
+	auth_type: string,
+};
+
 export type Health = "healthy" | "unhealthy" | "unknown";
+
+export type IamGroup = IamGroup_Serialize | IamGroup_Deserialize;
+
+export type IamGroupDetails = IamGroupDetails_Serialize | IamGroupDetails_Deserialize;
+
+export type IamGroupDetails_Deserialize = {
+	group: IamGroup_Deserialize,
+	users: IamUser_Deserialize[],
+};
+
+export type IamGroupDetails_Serialize = {
+	group: IamGroup_Serialize,
+	users: IamUser_Serialize[],
+};
+
+export type IamGroup_Deserialize = {
+	name: string,
+	arn: string,
+	id: string,
+	path: string,
+	created?: string | null,
+};
+
+export type IamGroup_Serialize = {
+	name: string,
+	arn: string,
+	id: string,
+	path: string,
+	created: string | null,
+};
+
+export type IamPolicy = IamPolicy_Serialize | IamPolicy_Deserialize;
+
+export type IamPolicyDetails = IamPolicyDetails_Serialize | IamPolicyDetails_Deserialize;
+
+export type IamPolicyDetails_Deserialize = {
+	policy: IamPolicy_Deserialize,
+	/**  The default version's document as JSON text. */
+	document?: string | null,
+};
+
+export type IamPolicyDetails_Serialize = {
+	policy: IamPolicy_Serialize,
+	/**  The default version's document as JSON text. */
+	document: string | null,
+};
+
+export type IamPolicy_Deserialize = {
+	name: string,
+	arn: string,
+	id?: string | null,
+	path?: string | null,
+	default_version?: string | null,
+	attachment_count: number | null,
+	attachable: boolean,
+	created?: string | null,
+	updated?: string | null,
+	description?: string | null,
+	/**  `AWS managed` for a policy under the `aws` account, else `Customer managed`. */
+	kind: string,
+};
+
+export type IamPolicy_Serialize = {
+	name: string,
+	arn: string,
+	id: string | null,
+	path: string | null,
+	default_version: string | null,
+	attachment_count: number | null,
+	attachable: boolean,
+	created: string | null,
+	updated: string | null,
+	description: string | null,
+	/**  `AWS managed` for a policy under the `aws` account, else `Customer managed`. */
+	kind: string,
+};
+
+export type IamRole = IamRole_Serialize | IamRole_Deserialize;
+
+export type IamRole_Deserialize = {
+	name: string,
+	arn: string,
+	id: string,
+	path: string,
+	created?: string | null,
+	description?: string | null,
+	max_session_duration?: number | null,
+	/**  The trust policy as JSON text. */
+	trust_policy?: string | null,
+	last_used?: string | null,
+};
+
+export type IamRole_Serialize = {
+	name: string,
+	arn: string,
+	id: string,
+	path: string,
+	created: string | null,
+	description: string | null,
+	max_session_duration: number | null,
+	/**  The trust policy as JSON text. */
+	trust_policy: string | null,
+	last_used: string | null,
+};
+
+export type IamUser = IamUser_Serialize | IamUser_Deserialize;
+
+export type IamUser_Deserialize = {
+	name: string,
+	arn: string,
+	id: string,
+	path: string,
+	created?: string | null,
+	password_last_used?: string | null,
+};
+
+export type IamUser_Serialize = {
+	name: string,
+	arn: string,
+	id: string,
+	path: string,
+	created: string | null,
+	password_last_used: string | null,
+};
+
+export type InvokeResult = InvokeResult_Serialize | InvokeResult_Deserialize;
+
+export type InvokeResult_Deserialize = {
+	status: number | null,
+	/**  `Handled` or `Unhandled` when the function failed. */
+	function_error?: string | null,
+	executed_version?: string | null,
+	/**  The last 4 KB of the function's log, decoded. */
+	log?: string | null,
+	payload: string,
+};
+
+export type InvokeResult_Serialize = {
+	status: number | null,
+	/**  `Handled` or `Unhandled` when the function failed. */
+	function_error: string | null,
+	executed_version: string | null,
+	/**  The last 4 KB of the function's log, decoded. */
+	log: string | null,
+	payload: string,
+};
 
 export type ItemPage = ItemPage_Serialize | ItemPage_Deserialize;
 
@@ -399,6 +826,93 @@ export type KeyAttribute = {
 	name: string,
 	/**  `S`, `N` or `B`. */
 	kind: string,
+};
+
+export type LambdaAccount = {
+	function_count: number | null,
+	total_code_size: number | null,
+	code_size_limit: number | null,
+	concurrent_executions: number | null,
+};
+
+export type LambdaAlias = LambdaAlias_Serialize | LambdaAlias_Deserialize;
+
+export type LambdaAlias_Deserialize = {
+	name: string,
+	arn: string,
+	version: string,
+	description?: string | null,
+};
+
+export type LambdaAlias_Serialize = {
+	name: string,
+	arn: string,
+	version: string,
+	description: string | null,
+};
+
+export type LambdaFunction = LambdaFunction_Serialize | LambdaFunction_Deserialize;
+
+export type LambdaFunctionDetails = LambdaFunctionDetails_Serialize | LambdaFunctionDetails_Deserialize;
+
+export type LambdaFunctionDetails_Deserialize = {
+	function: LambdaFunction_Deserialize,
+	/**  `S3` for a .zip package, `ECR` for a container image. */
+	code_repository?: string | null,
+};
+
+export type LambdaFunctionDetails_Serialize = {
+	function: LambdaFunction_Serialize,
+	/**  `S3` for a .zip package, `ECR` for a container image. */
+	code_repository: string | null,
+};
+
+export type LambdaFunction_Deserialize = {
+	name: string,
+	arn: string,
+	runtime?: string | null,
+	handler?: string | null,
+	description?: string | null,
+	role?: string | null,
+	version?: string | null,
+	/**  `Pending`, `Active`, `Inactive` or `Failed`. */
+	state?: string | null,
+	state_reason?: string | null,
+	/**  `InProgress`, `Successful` or `Failed`. */
+	last_update_status?: string | null,
+	/**  RFC 3339 text of the last modification when the emulator's text parses, else the text itself. */
+	last_modified?: string | null,
+	code_size: number | null,
+	memory_size?: number | null,
+	timeout?: number | null,
+	ephemeral_storage?: number | null,
+	package_type?: string | null,
+	architectures: string[],
+	environment: { [key in string]: string },
+};
+
+export type LambdaFunction_Serialize = {
+	name: string,
+	arn: string,
+	runtime: string | null,
+	handler: string | null,
+	description: string | null,
+	role: string | null,
+	version: string | null,
+	/**  `Pending`, `Active`, `Inactive` or `Failed`. */
+	state: string | null,
+	state_reason: string | null,
+	/**  `InProgress`, `Successful` or `Failed`. */
+	last_update_status: string | null,
+	/**  RFC 3339 text of the last modification when the emulator's text parses, else the text itself. */
+	last_modified: string | null,
+	code_size: number | null,
+	memory_size: number | null,
+	timeout: number | null,
+	ephemeral_storage: number | null,
+	package_type: string | null,
+	architectures: string[],
+	environment: { [key in string]: string },
 };
 
 /**  The console's simplified lifecycle rule: a prefix filter and up to three day counts. */
@@ -436,6 +950,38 @@ export type MessageAttribute = {
 	data_type: string,
 	value: string,
 };
+
+/**
+ *  A freshly created access key. The secret exists only in this answer: it is shown once and is
+ *  never stored or logged, and this type has no `Debug` so a log line cannot print it.
+ */
+export type NewAccessKey = {
+	id: string,
+	secret: string,
+};
+
+export type PolicyEntity = {
+	/**  `User`, `Group` or `Role`. */
+	kind: string,
+	name: string,
+};
+
+export type PolicyVersion = PolicyVersion_Serialize | PolicyVersion_Deserialize;
+
+export type PolicyVersion_Deserialize = {
+	id: string,
+	is_default: boolean,
+	created?: string | null,
+};
+
+export type PolicyVersion_Serialize = {
+	id: string,
+	is_default: boolean,
+	created: string | null,
+};
+
+/**  Which kind of principal a policy command works on. */
+export type PrincipalKind = "user" | "group" | "role";
 
 export type ProviderError = 
 /**  stop and restart discard every emulated resource and need an explicit confirmation. */
@@ -837,6 +1383,9 @@ export type Tag = {
 	value: string,
 };
 
+/**  What a tag command works on. */
+export type TaggableKind = "user" | "role" | "policy";
+
 export type TimeToLive = TimeToLive_Serialize | TimeToLive_Deserialize;
 
 export type TimeToLive_Deserialize = {
@@ -871,6 +1420,14 @@ export type TransferResult_Serialize = {
 	/**  Local file the object came from or went to. */
 	path: string,
 	error: string | null,
+};
+
+export type UpdateConfigurationInput = {
+	description: string,
+	handler: string,
+	memory_size: number | null,
+	timeout: number | null,
+	environment: { [key in string]: string },
 };
 
 export type VersionCheck = {

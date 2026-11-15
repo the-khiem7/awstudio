@@ -163,6 +163,46 @@ impl Clients {
         let conf = aws_sdk_sns::config::Builder::from(&self.regional(region)?).interceptor(self.guard.clone()).build();
         Ok(aws_sdk_sns::Client::from_conf(conf))
     }
+
+    pub fn lambda_in(&self, region: &str) -> Result<aws_sdk_lambda::Client, ApiError> {
+        let conf = aws_sdk_lambda::config::Builder::from(&self.regional(region)?).interceptor(self.guard.clone()).build();
+        Ok(aws_sdk_lambda::Client::from_conf(conf))
+    }
+
+    /// IAM client in the session's own Region. IAM is global on AWS, so its pages take no Region
+    /// and every call goes to the one Region the emulator was started with.
+    pub fn iam(&self) -> aws_sdk_iam::Client {
+        let conf = aws_sdk_iam::config::Builder::from(&self.config).interceptor(self.guard.clone()).build();
+        aws_sdk_iam::Client::from_conf(conf)
+    }
+
+    /// Downloads a URL the emulator handed out (a Lambda deployment package location), trusting
+    /// only the emulator CA and refusing any URL the endpoint guard would refuse. Redirects are
+    /// not followed and at most `limit` bytes are accepted.
+    pub async fn fetch(&self, op: &str, url: &str, limit: usize) -> Result<Vec<u8>, ApiError> {
+        self.guard.check(url).map_err(|detail| ApiError::Guard { op: op.to_string(), detail })?;
+        let transport = |e: reqwest::Error| ApiError::Transport { op: op.to_string(), detail: e.to_string() };
+        let cert = reqwest::Certificate::from_pem(&self.session.ca_pem).map_err(transport)?;
+        let client = reqwest::Client::builder()
+            .tls_certs_only([cert])
+            .redirect(reqwest::redirect::Policy::none())
+            .timeout(std::time::Duration::from_secs(60))
+            .no_proxy()
+            .build()
+            .map_err(transport)?;
+        let response = client.get(url).send().await.map_err(transport)?;
+        if !response.status().is_success() {
+            return Err(ApiError::Aws { op: op.to_string(), code: "DownloadFailed".into(), message: format!("the emulator answered HTTP {}", response.status().as_u16()), status: Some(response.status().as_u16()) });
+        }
+        if response.content_length().is_some_and(|n| n as usize > limit) {
+            return Err(ApiError::Invalid { detail: format!("the package is larger than {limit} bytes") });
+        }
+        let bytes = response.bytes().await.map_err(transport)?;
+        if bytes.len() > limit {
+            return Err(ApiError::Invalid { detail: format!("the package is larger than {limit} bytes") });
+        }
+        Ok(bytes.to_vec())
+    }
 }
 
 /// `us-east-1`, `ap-southeast-2`: lowercase words joined by hyphens, ending in a number.
