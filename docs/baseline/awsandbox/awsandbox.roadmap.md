@@ -4,7 +4,7 @@ pack: "awsandbox"
 document: "roadmap"
 status: "active"
 updated: "2026-11-15"
-code_ref: "uncommitted"
+code_ref: "e69d991"
 ---
 
 # awsandbox - roadmap
@@ -15,7 +15,7 @@ code_ref: "uncommitted"
 |---|---|---|---|
 | Phase 0 | Foundation and toolchain gate | complete | - |
 | Phase 1 | Runtime providers | implemented, awaiting approval | Phase 0 |
-| Phase 2 | Session and SDK access | planned | Phase 1 |
+| Phase 2 | Session and SDK access | implemented, awaiting approval | Phase 1 |
 | Phase 3 | Console shell and capability matrix | planned | Phase 2 |
 | Phase 4 | Services wave 1: S3, DynamoDB, SQS, SNS | planned | Phase 3 |
 | Phase 5 | Services wave 2: IAM, Lambda | planned | Phase 4 |
@@ -86,7 +86,7 @@ Acceptance:
 
 Verification gate: the port published inside WSL is reachable from Windows at `127.0.0.1:<port>`.
 
-Checkpoint (tasks 1 to 7 implemented, uncommitted):
+Checkpoint (tasks 1 to 7 implemented, committed in `2fb042d` and `22ee71e`):
 
 | Acceptance | State |
 |---|---|
@@ -98,7 +98,7 @@ Checkpoint (tasks 1 to 7 implemented, uncommitted):
 - Tasks: 1 `Provider` trait; 2 `DockerProvider` (engine classification, `/mnt/<drive>` path translation, image build with fingerprint and signature check, `127.0.0.1` publish, memory limit, JSON log stream); 3 `NativeProvider` (`wsl.exe --exec`, `HOME` on the Windows profile, SIGTERM stop); 4 `AttachProvider`; 5 `aws-emulator -v` parse and pinned-commit compare, warning banner, "Rebuild image at pinned version"; 6 first-run telemetry modal and toggle, `--telemetry off` passed when off; 7 stop and restart refuse without `confirm_data_loss` (backend) and a confirmation modal (UI).
 - Evidence: `cargo test --lib` 23 passed; `cargo test --test live_providers -- --ignored` 2 passed (Docker start, health, version, logs, restart, stop; native start, health, version, log replay, attach, stop, attach after stop fails); `npm run build` passed; release build launched and driven over WebView2 remote debugging (`get_settings`, `provider_status`, `provider_start`, `provider_version_check`, `provider_stop` without confirmation returned `confirmation_required`, `provider_stop` confirmed returned stopped); the page showed the telemetry notice on first run; a build with a wrong key fingerprint failed (ASB-D21).
 - Changed files: `src-tauri/Cargo.toml`, `Cargo.lock` (`serde`, `serde_json`, `reqwest` 0.13 with `rustls` and `blocking`), `src-tauri/src/lib.rs`, `src-tauri/src/commands.rs`, `src-tauri/src/provider/` (`mod.rs`, `process.rs`, `docker.rs`, `native.rs`, `attach.rs`, `health.rs`, `version.rs`, `settings.rs`), `src-tauri/tests/live_providers.rs`, `src/App.tsx`, `src/runtime/api.ts`, `src/runtime/Runtime.tsx`.
-- Open: ASB-Q6 (default memory limit) and ASB-Q7 (native install source, no DEB URL). Not verified: Docker Desktop; the Windows CI run of the new code; a running emulator's log panel in the UI; the `-d --rm` first run that exited at once and was not reproduced.
+- Open: ASB-Q6 (default memory limit) and ASB-Q7 (native install source, no DEB URL). Windows CI on the new code: verified, GitHub Actions run 43658052256 on commit `3283b1a` passed (job `windows`, 2m56s). Not verified: Docker Desktop; a running emulator's log panel in the UI; the `-d --rm` first run that exited at once and was not reproduced.
 - Risk: attach reports no version or logs (an unowned process); the first-run telemetry modal cannot be dismissed without a choice by design; `telemetry` files under `~/.aws/emulator/telemetry` appeared during probes and their cause was not traced.
 
 ## Phase 2: Session and SDK access
@@ -115,6 +115,21 @@ Acceptance:
 
 - `sts:GetCallerIdentity` and `s3:ListBuckets` succeed from the backend after each restart without user action.
 - A request built for a non-emulator host is refused by the endpoint guard.
+
+Checkpoint (tasks 1 to 5 implemented, committed in `80a18b6`, `5dc0e1c`, `4f12a55` and `632ca58`):
+
+| Acceptance | State |
+|---|---|
+| STS and S3 succeed after each restart, no user action | verified twice: the `live_session` test (start, both calls, restart, new key detected, both calls) and the release build over WebView2 IPC (`session_check` after `provider_start` and after `provider_restart`, account `000000000000`, 0 buckets) |
+| Request to a non-emulator host refused by the guard | verified by unit test: an STS client whose endpoint is `https://sts.amazonaws.com` fails with the `guard` error and sends nothing; URI rules unit-tested (other port, `http`, virtual-hosted bucket, look-alike host) |
+
+- Tasks: 1 `Session::load` reads `ca.pem`, the key file (name from the one constant) and the region from `config` on every SDK call, rebuilds clients when key, CA or region change, and is preloaded after start and restart; 2 `aws::Clients` (explicit credentials, CA-only trust store, endpoint override, `EndpointGuard` at `read_before_transmit`, path-style S3); 3 tauri-specta bindings in `src/bindings.ts`, `ApiError` with HTTP 501 to `unsupported { op, variant, version }`; 4 PowerShell and cmd environment blocks plus "Open terminal with emulator environment" on a new SDK access panel; 5 region probe.
+- Region result: SQS queues of one name in `us-east-1` and `eu-west-1` are separate resources (each region lists only its own; a tag set in `us-east-1` is absent in `eu-west-1`); recorded under Emulator facts in `awsandbox.introduction.md`.
+- Evidence: `cargo test --lib` 34 passed; `cargo test --test bindings` passed (committed bindings match); `cargo test --test live_session -- --ignored` 2 passed; `npm run build` passed; release build driven over WebView2 remote debugging (`session_check` before start returned the `session` error, `session_info`, `env_block`, "Test connection" click rendered the signed-in line, `open_terminal` spawned `powershell.exe -NoExit`, `session_check` after stop returned the `session` error); both env blocks run in a shell holding a bogus `AWS_PROFILE` and `AWS_ACCESS_KEY_ID` returned account `000000000000`.
+- Test binaries that link the Tauri runtime failed to load until the Windows resource was linked into them; cause and fix in ASB-D23.
+- Changed files: `src-tauri/Cargo.toml`, `Cargo.lock` (`aws-sdk-s3`, `aws-types`, `specta` `=2.0.0-rc.28`, `specta-typescript` 0.0.15, `tauri-specta` `=2.0.0-rc.29`), `src-tauri/build.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/commands.rs`, `src-tauri/src/session.rs`, `src-tauri/src/aws.rs`, `src-tauri/src/env.rs`, `src-tauri/src/provider/` (`mod.rs`, `settings.rs`, `version.rs`: `specta::Type` derives), `src-tauri/src/emulator_tls.rs` (removed, replaced by `aws.rs`), `src-tauri/tests/bindings.rs`, `src-tauri/tests/live_session.rs`, `src-tauri/tests/fixtures/test-ca.pem` (certificate only, no key), `src/bindings.ts`, `src/runtime/api.ts`, `src/runtime/SdkAccess.tsx`, `src/runtime/Runtime.tsx`, `README.md`.
+- Not verified: a live HTTP 501 through `map_sdk_error` (the 501 message parser is unit-tested only); the environment inside the opened terminal window (the window opened; the same variables passed the CLI check); the Windows CI run of this code; the SDK access panel on a screenshot.
+- Risk: tauri-specta and specta are release candidates pinned with `=`; the emulator returns SQS queue URLs on real AWS hosts (`https://sqs.<region>.amazonaws.com/...`), so a client that follows such a URL instead of the endpoint override is stopped only by the guard.
 
 ## Phase 3: Console shell and capability matrix
 
@@ -193,11 +208,11 @@ Deferred by ASB-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 | SDK crypto stack needs C tools | Phase 0 blocked | `rustls-ring` feature |
 | WSL port forwarding off | No endpoint from Windows | Phase 1 gate |
 | Idle memory over limit | Exit 137, state lost | Idle measured at 180 MiB, default `2g` (ASB-Q6) |
-| Region semantics unknown | Wrong region selector behavior | Phase 2 task 5 |
+| Region semantics unknown | Wrong region selector behavior | Measured in Phase 2: SQS state is partitioned by region |
 | Upstream release velocity | Stale capability claims | ASB-D13 drift tool |
 | Running version differs from pin | Wrong gating | ASB-D14 banner, ASB-D18 |
 | Smithy models 118 MB | Large installer | Trimmed bundle in Phase 7 |
 
 ## Next action
 
-Phase 1 is implemented and waits for the user to approve it and to answer ASB-Q6 and ASB-Q7. Then push so CI builds the new code, and start Phase 2 task 1 (load keys, CA and config from `~/.aws/emulator/<port>/`).
+Phase 1 and Phase 2 are implemented and wait for the user to approve them and to answer ASB-Q6 and ASB-Q7. Then push so CI builds the Phase 2 code, and start Phase 3 task 1 (`tools/capability-gen` writing `capability.json` from the pinned vendor data).

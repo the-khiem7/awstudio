@@ -4,7 +4,7 @@ pack: "awsandbox"
 document: "hallucination"
 status: "active"
 updated: "2026-11-15"
-code_ref: "uncommitted"
+code_ref: "e69d991"
 ---
 
 # awsandbox - decisions and open questions
@@ -37,6 +37,7 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASB-D20 | Lesson: windows-gnu target fails with llvm-mingw, gnullvm builds | lesson | ASB-D6, ASB-D7 |
 | ASB-D21 | Lesson: gnupg2-minimal cannot verify the package signature in the image build | lesson | ASB-D4, ASB-D18 |
 | ASB-D22 | External agent skills tauri-v2 and modern-web-guidance not adopted | closed | ASB-D2, ASB-D17, ASB-D20 |
+| ASB-D23 | Lesson: test binaries linking the Tauri runtime fail to load on Windows | lesson | ASB-D20 |
 | ASB-Q6 | Default container memory limit | open | ASB-D4 |
 | ASB-Q7 | Native provider install source: no DEB package URL known | open | ASB-D4, ASB-D7 |
 
@@ -259,6 +260,13 @@ Closes ASB-Q4.
 - What breaks if ignored: a skill applied without those overrides pushes `cdylib` into `Cargo.toml` (link failure with 90650 exported symbols against a limit of 65535), a shell plugin into the capability file, or hand-built dialogs and selects beside Cloudscape ones.
 - Rejected: install `tauri-v2` project-scoped with override notes - the user declined [user].
 - Rejected: defer `modern-web-guidance` to the console-shell phase - the user declined it together with the other skill [user].
+
+### ASB-D23: Lesson: test binaries linking the Tauri runtime fail to load on Windows
+
+- Believed: a unit test in the library crate can build the tauri-specta command registry (`Builder::<tauri::Wry>` with `collect_commands!`) and export `src/bindings.ts`, as the Phase 1 unit tests already linked `tauri` through `commands.rs`.
+- Why it looked reasonable: `cargo check --lib --tests` passed and the Phase 1 tests that use `tauri::State` ran.
+- What disproved it: `cargo test --lib` exited `-1073741511` (`STATUS_ENTRYPOINT_NOT_FOUND`) before any test ran. The registry pulls in the wry and tao window code, the test exe imports `comctl32.dll` and carries no resources; `TaskDialogIndirect` exists only in Common Controls v6, which needs the manifest that tauri-build links into binaries only (`cargo:rustc-link-arg-bins=...libresource.a`). Emitting `cargo:rustc-link-arg-tests` for the same resource did not reach the library's unit-test exe.
+- Fix: `build.rs` emits `cargo:rustc-link-arg-tests` for `libresource.a` (GNU family) or `resource.lib` (MSVC), which integration tests receive, and the bindings export runs in the integration test `tests/bindings.rs`. Library unit tests stay free of the registry. [agent]
 
 ## Open questions
 

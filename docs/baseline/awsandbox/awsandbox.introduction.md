@@ -4,14 +4,14 @@ pack: "awsandbox"
 document: "introduction"
 status: "active"
 updated: "2026-11-15"
-code_ref: "uncommitted"
+code_ref: "e69d991"
 ---
 
 # awsandbox - introduction
 
 ## Scope
 
-`awsandbox` is a Tauri v2 desktop app (Windows first, Linux deferred, ASB-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awsandbox.hallucination.md` ASB-D1 to ASB-D19.
+`awsandbox` is a Tauri v2 desktop app (Windows first, Linux deferred, ASB-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awsandbox.hallucination.md` ASB-D1 to ASB-D23.
 
 In scope:
 
@@ -28,7 +28,7 @@ Out of scope until after packaging: embedded mode (ASB-D5).
 
 | Item | State |
 |---|---|
-| Application code | Phase 0 scaffold committed; Phase 1 runtime providers (Docker, native WSL, attach), their Tauri commands and a Runtime page are in the working tree, uncommitted; no console pages |
+| Application code | Phase 0 scaffold, Phase 1 runtime providers (Docker, native WSL, attach) with the Runtime page, and Phase 2 session loading, shared SDK clients with the endpoint guard, generated bindings and the SDK access panel are committed; no console pages |
 | Branch | `main` |
 | Committed | `.gitmodules`, `vendor/aws-emulator`, `vendor/cloudscape-demos`, this pack |
 | Windows CI | verified: GitHub Actions run 43653923870 on commit `9163495` passed (job `windows`, 4m34s) |
@@ -52,7 +52,9 @@ Out of scope until after packaging: embedded mode (ASB-D5).
 - CLI: `-b/--bind`, `-p/--port` (0 picks a free port), `-a/--auth on|off`, `-t/--telemetry on|off`, `--idle-timeout <seconds>`, `-v/--version` (prints Version, Release date, Commit), `-h/--help`.
 - Environment: `EMULATOR_DATA_PORT`, `EMULATOR_BIND_ADDRESS`, `EMULATOR_TELEMETRY`, `EMULATOR_CONFIG`, `EMULATOR_STACK_BYTES`.
 - SigV4 authentication is on by default; each start writes new keys, a new `ca.pem`, a `config` profile and `truststore.p12` under `~/.aws/emulator/<port>/` (`%USERPROFILE%\.aws\emulator\<port>\` on Windows).
-- One account, `000000000000`; generated config region `us-east-1`. Whether state is partitioned by region is unverified.
+- One account, `000000000000`; generated config region `us-east-1`. State is partitioned by region: SQS queues of one name in `us-east-1` and `eu-west-1` are separate resources, each listed and tagged only in its own region (measured in Phase 2).
+- SQS returns queue URLs on real AWS hosts (`https://sqs.<region>.amazonaws.com/000000000000/<name>`); calls still work because clients send to the endpoint override.
+- The generated `config` is written from where the emulator runs, so in a container or WSL its `ca_bundle` is that side's path and its `endpoint_url` can name that side's bind address; clients take the endpoint and CA path from the Windows side and only the region from the file (file contents under Docker not inspected).
 - State is in memory only; stopping the emulator deletes all emulated resources. A container over its memory limit exits 137 and loses state.
 - Lambda runs Node.js and Python handlers inside the emulator process; upstream says function code "isn't isolated from your machine".
 - Upstream security guidance: do not use the emulator to test IAM, bucket or KMS policies, or cross-account or cross-Region access.
