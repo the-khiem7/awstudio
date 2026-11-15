@@ -3,26 +3,34 @@ import Button, { type ButtonProps } from "@cloudscape-design/components/button";
 import { createContext, useContext, type ReactNode } from "react";
 import { emulatorLabel, useCapability, useCapabilityMatrix, type Capability } from "../capability";
 
-// Gating shared by every page pattern: a page whose primary read operation is not green is
-// UI-only, and every control on it is disabled, whatever its own operation's tier.
+// Gating shared by every page pattern. A page whose primary read operation (its List or Describe
+// call) is red, or not judged yet, is UI-only: no data is loaded and every control is disabled. A
+// yellow primary read still loads data under a "partly supported" banner; the page's other
+// controls keep their own tiers, so yellow actions stay disabled.
 
 interface UiOnlyValue {
   uiOnly: boolean;
+  /** The primary read is yellow: data loads, with a banner saying it is only partly supported. */
+  partial: boolean;
   reason: string;
+  /** The page's primary read, which may run on a partial page although it is yellow. */
+  primaryOp: string;
 }
 
-const UiOnlyContext = createContext<UiOnlyValue>({ uiOnly: false, reason: "" });
+const UiOnlyContext = createContext<UiOnlyValue>({ uiOnly: false, partial: false, reason: "", primaryOp: "" });
 
 /** Judges the page's primary read operation (its List or Describe call). */
 export function usePageCapability(primaryOp: string): UiOnlyValue & { capability: Capability } {
   const capability = useCapability(primaryOp);
-  return { uiOnly: !capability.enabled, reason: capability.reason, capability };
+  const partial = capability.tier === "yellow" && !capability.enabled;
+  const uiOnly = !capability.enabled && !partial;
+  return { uiOnly, partial, reason: capability.reason, primaryOp, capability };
 }
 
-/** Puts a page, or a part of one, in UI-only mode for every gated control inside it. */
+/** Puts a page, or a part of one, in UI-only or partial mode for every gated control inside it. */
 export function UiOnlyScope({ primaryOp, children }: { primaryOp: string; children: ReactNode }) {
-  const { uiOnly, reason } = usePageCapability(primaryOp);
-  return <UiOnlyContext.Provider value={{ uiOnly, reason }}>{children}</UiOnlyContext.Provider>;
+  const { uiOnly, partial, reason } = usePageCapability(primaryOp);
+  return <UiOnlyContext.Provider value={{ uiOnly, partial, reason, primaryOp }}>{children}</UiOnlyContext.Provider>;
 }
 
 export function useUiOnly(): UiOnlyValue {
@@ -35,6 +43,8 @@ export function useGate(op?: string, variant?: string): { enabled: boolean; reas
   const own = useCapability(op ?? "", variant);
   if (page.uiOnly) return { enabled: false, reason: `This page is view-only: ${page.reason}` };
   if (!op) return { enabled: true, reason: "" };
+  // The primary read of a partial page runs: the page exists to show what it returns.
+  if (page.partial && op === page.primaryOp && !variant) return { enabled: true, reason: "" };
   return { enabled: own.enabled, reason: own.reason };
 }
 
@@ -61,4 +71,23 @@ export function UnsupportedBanner({ reason, children }: { reason?: string; child
       {children ?? `${text}. This page shows the console layout only; its actions are disabled and no data is loaded.`}
     </Alert>
   );
+}
+
+/** The banner of a partial page: the data shown may be incomplete. */
+export function PartialBanner() {
+  const matrix = useCapabilityMatrix();
+  const page = useUiOnly();
+  return (
+    <Alert type="warning" header={`Partly supported by ${emulatorLabel(matrix)}`}>
+      {`${page.reason}. The data below comes from the emulator and may be incomplete; actions that the emulator supports only partly are disabled.`}
+    </Alert>
+  );
+}
+
+/** The banner of the current scope, if any: UI-only or partly supported. */
+export function ScopeBanner() {
+  const { uiOnly, partial } = useUiOnly();
+  if (uiOnly) return <UnsupportedBanner />;
+  if (partial) return <PartialBanner />;
+  return null;
 }

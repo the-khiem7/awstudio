@@ -23,7 +23,7 @@ import Toggle from "@cloudscape-design/components/toggle";
 import { useEffect, useState, type ReactNode } from "react";
 import { commands, type MessageAttribute, type SqsMessage_Serialize, type SqsQueue_Serialize } from "../../bindings";
 import { useReportUnsupported } from "../../capability";
-import { CreateForm, DeleteModal, DetailsPage, GatedButton, ResourceTable, textProperty, UiOnlyScope, UnsupportedBanner, useUiOnly, type ResourceTableColumn } from "../../patterns";
+import { CreateForm, DeleteModal, DetailsPage, GatedButton, ResourceTable, textProperty, ScopeBanner, UiOnlyScope, useUiOnly, type ResourceTableColumn } from "../../patterns";
 import { errorText } from "../../runtime/api";
 import { ConsolePage, type HelpContent } from "../../shell/ConsolePage";
 import { href, matchPath, navigate } from "../../shell/router";
@@ -89,11 +89,10 @@ function QueuesList() {
   const { run } = useAction();
   const [deleting, setDeleting] = useState<QueueRow | null>(null);
   const [purging, setPurging] = useState<QueueRow | null>(null);
-  const { uiOnly } = useUiOnly();
   const rows: QueueRow[] = (queues.data ?? []).map((q) => ({ ...q, type: q.fifo ? "FIFO" : "Standard", available: q.messages_available ?? 0, inFlight: q.messages_in_flight ?? 0, createdAt: q.created ? new Date(q.created) : null }));
   return (
     <SpaceBetween size="m">
-      {uiOnly && <UnsupportedBanner />}
+      <ScopeBanner />
       <LoadError error={queues.error} onRetry={queues.reload} />
       <ResourceTable<QueueRow>
         resourceName="Queue"
@@ -384,7 +383,7 @@ function SnsSubscriptionsTab({ arn }: { arn: string }) {
   const topicList = useLoad(() => commands.snsListTopics(region), [subscribing], subscribing);
   return (
     <SpaceBetween size="m">
-      {uiOnly && <UnsupportedBanner />}
+      <ScopeBanner />
       <LoadError error={subs.error ?? topicList.error} />
       <Table
         variant="container"
@@ -450,7 +449,7 @@ function SourcesTable({ items, loading, error }: { items: string[]; loading: boo
   const { uiOnly } = useUiOnly();
   return (
     <SpaceBetween size="s">
-      {uiOnly && <UnsupportedBanner />}
+      <ScopeBanner />
       <LoadError error={uiOnly ? null : error} />
       <Table
         variant="container"

@@ -6,7 +6,7 @@ export { CreateForm, type CreateFormProps } from "./CreateForm";
 export { CreateWizard, type CreateWizardProps, type WizardStep } from "./CreateWizard";
 export { DeleteModal, type DeleteModalProps } from "./DeleteModal";
 export { DetailsPage, type DetailsPageProps, type DetailsSection } from "./DetailsPage";
-export { GatedButton, UiOnlyScope, UnsupportedBanner, useGate, usePageCapability, useUiOnly, type GatedButtonProps } from "./gating";
+export { GatedButton, PartialBanner, ScopeBanner, UiOnlyScope, UnsupportedBanner, useGate, usePageCapability, useUiOnly, type GatedButtonProps } from "./gating";
 export { ManageTags, type ManageTagsProps, type Tag } from "./ManageTags";
 export { ResourceTable, type ResourceTableColumn, type ResourceTableProps } from "./ResourceTable";
 export { S3Picker, type S3PickerProps, type S3Source } from "./S3Picker";

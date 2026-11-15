@@ -35,8 +35,8 @@ import {
   ResourceTable,
   ServiceDashboard,
   textProperty,
+  ScopeBanner,
   UiOnlyScope,
-  UnsupportedBanner,
   useUiOnly,
   type ResourceTableColumn,
 } from "../../patterns";
@@ -706,7 +706,7 @@ function ItemExplorer({ initialTable }: { initialTable: string | null }) {
       <Header variant="h1" info={undefined} description="Scan or query the items of a table.">
         Explore items
       </Header>
-      {uiOnly && <UnsupportedBanner />}
+      <ScopeBanner />
       <LoadError error={tables.error} onRetry={tables.reload} />
       <Container header={<Header variant="h2">Scan or query items</Header>}>
         <SpaceBetween size="m">

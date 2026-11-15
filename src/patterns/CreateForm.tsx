@@ -10,7 +10,7 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { errorText } from "../runtime/api";
 import { useReportUnsupported } from "../capability";
 import { InfoLink, type HelpContent } from "../shell/ConsolePage";
-import { GatedButton, UnsupportedBanner, useGate, useUiOnly } from "./gating";
+import { GatedButton, ScopeBanner, useGate } from "./gating";
 import { useUnsavedChanges } from "./unsaved";
 
 export interface CreateFormProps {
@@ -41,7 +41,6 @@ export interface CreateFormProps {
 
 /** A single-page create or edit form with validation, a submit error alert and an unsaved-changes guard. */
 export function CreateForm(props: CreateFormProps) {
-  const { uiOnly } = useUiOnly();
   const reportUnsupported = useReportUnsupported();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +92,7 @@ export function CreateForm(props: CreateFormProps) {
         }
       >
         <SpaceBetween size="l">
-          {uiOnly && <UnsupportedBanner />}
+          <ScopeBanner />
           {error && (
             <Alert type="error" header="The request failed" dismissible onDismiss={() => setError(null)}>
               {error}

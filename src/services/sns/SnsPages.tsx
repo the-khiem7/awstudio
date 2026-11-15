@@ -20,7 +20,7 @@ import Tiles from "@cloudscape-design/components/tiles";
 import Toggle from "@cloudscape-design/components/toggle";
 import { useState, type ReactNode } from "react";
 import { commands, type MessageAttribute, type SnsSubscription, type SnsTopic_Serialize } from "../../bindings";
-import { CreateForm, DeleteModal, DetailsPage, GatedButton, ResourceCounts, ResourceTable, ServiceDashboard, textProperty, UiOnlyScope, UnsupportedBanner, useUiOnly, type ResourceTableColumn } from "../../patterns";
+import { CreateForm, DeleteModal, DetailsPage, GatedButton, ResourceCounts, ResourceTable, ServiceDashboard, textProperty, ScopeBanner, UiOnlyScope, type ResourceTableColumn } from "../../patterns";
 import { ConsolePage, type HelpContent } from "../../shell/ConsolePage";
 import { href, matchPath, navigate } from "../../shell/router";
 import { Copyable, EditTagsModal, FormModal, JsonEditor, jsonError, LoadError, prettyJson, TagsTable, useAction, useGates, useLoad, useRegion } from "../common";
@@ -505,10 +505,9 @@ function Publish({ arn }: { arn: string }) {
 function SubscriptionsList() {
   const region = useRegion();
   const subs = useLoad(() => commands.snsListSubscriptions(region), []);
-  const { uiOnly } = useUiOnly();
   return (
     <SpaceBetween size="m">
-      {uiOnly && <UnsupportedBanner />}
+      <ScopeBanner />
       <LoadError error={subs.error} onRetry={subs.reload} />
       <SubscriptionsTable items={subs.data ?? []} loading={subs.loading} onRefresh={subs.reload} onDeleted={subs.reload} variant="full-page" />
     </SpaceBetween>

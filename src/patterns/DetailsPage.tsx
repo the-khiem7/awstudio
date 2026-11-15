@@ -8,7 +8,7 @@ import Tabs from "@cloudscape-design/components/tabs";
 import type { ReactNode } from "react";
 import { InfoLink, type HelpContent } from "../shell/ConsolePage";
 import { href, navigate, useLocation } from "../shell/router";
-import { UnsupportedBanner, useUiOnly } from "./gating";
+import { ScopeBanner, useUiOnly } from "./gating";
 
 export interface DetailsSection {
   id: string;
@@ -43,7 +43,7 @@ export function DetailsPage({ title, help, actions, overview, layout, sections }
       <Header variant="h1" info={help && <InfoLink topic={help} />} actions={actions}>
         {title}
       </Header>
-      {uiOnly && <UnsupportedBanner />}
+      <ScopeBanner />
       {overview && (
         <Container header={<Header variant="h2">{overview.title}</Header>}>
           <KeyValuePairs columns={overview.columns ?? 3} items={uiOnly ? overview.items.map((i) => ({ ...i, value: "-" })) : overview.items} />

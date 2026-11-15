@@ -8,7 +8,7 @@ import Link from "@cloudscape-design/components/link";
 import SpaceBetween from "@cloudscape-design/components/space-between";
 import type { ReactNode } from "react";
 import { InfoLink, type HelpContent } from "../shell/ConsolePage";
-import { UnsupportedBanner, useUiOnly } from "./gating";
+import { ScopeBanner } from "./gating";
 
 export interface DashboardWidget {
   id: string;
@@ -27,13 +27,12 @@ export interface ServiceDashboardProps {
 
 /** A service dashboard: a header and a responsive grid of containers. */
 export function ServiceDashboard({ title, help, actions, widgets }: ServiceDashboardProps) {
-  const { uiOnly } = useUiOnly();
   return (
     <SpaceBetween size="m">
       <Header variant="h1" info={help && <InfoLink topic={help} />} actions={actions}>
         {title}
       </Header>
-      {uiOnly && <UnsupportedBanner />}
+      <ScopeBanner />
       <Grid gridDefinition={widgets.map((w) => ({ colspan: { default: 12, m: w.span ?? 6 } }))}>
         {widgets.map((w) => (
           <Container key={w.id} fitHeight header={<Header variant="h2">{w.title}</Header>}>
