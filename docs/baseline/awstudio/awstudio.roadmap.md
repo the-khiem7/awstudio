@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "roadmap"
 status: "active"
 updated: "2026-11-16"
-code_ref: "acef8b3"
+code_ref: "251af0c"
 ---
 
 # awstudio - roadmap
@@ -18,7 +18,7 @@ code_ref: "acef8b3"
 | Phase 2 | Session and SDK access | complete | Phase 1 |
 | Phase 3 | Console shell and capability matrix | complete | Phase 2 |
 | Phase 4 | Services wave 1: S3, DynamoDB, SQS, SNS | complete | Phase 3 |
-| Phase 5 | Services wave 2: IAM, Lambda | active | Phase 4 |
+| Phase 5 | Services wave 2: IAM, Lambda | complete | Phase 4 |
 | Phase 6 | Services wave 3: Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge | planned | Phase 5 |
 | Phase 7 | API Console, fidelity catalog, seed scripts | planned | Phase 3 |
 | Phase 8 | Packaging | planned | Phase 6, Phase 7 |
@@ -202,7 +202,7 @@ Pages:
 
 Acceptance: a Node.js and a Python function are created, edited in the Code tab, deployed and invoked from the Test tab.
 
-Checkpoint (pages and commands implemented, committed in `32cc89a` and `a241ecd`; awaiting Kai's approval to close):
+Checkpoint (pages and commands implemented, committed in `32cc89a`, `a241ecd`, `9fec15b` and `251af0c`; closed with Kai's approval on 2026-11-16):
 
 | Acceptance | State |
 |---|---|
@@ -212,11 +212,11 @@ Checkpoint (pages and commands implemented, committed in `32cc89a` and `a241ecd`
 - Pages: IAM dashboard, users, user groups, roles, policies; user and role create wizards, user group and policy create forms with the JSON policy editor; details pages with Permissions (attach, detach, inline policies), Groups, Tags, Security credentials (access keys), Trust relationships, policy entities and versions. Lambda dashboard, functions, create function, details with Code (file list and editor, deploy), Test (events saved in local storage), Configuration (general, environment variables, triggers, resource policy, function URL, tags), Aliases, Versions. Routes in `awstudio.sourcecode.md`.
 - Commands: 61 (IAM 41, Lambda 20); IAM commands take no Region, Lambda commands take one.
 - Evidence: `cargo test --lib` 50 passed (11 new: document decoding, principal operation names, zip round trip and unsafe names); `cargo test --test bindings` regenerated `src/bindings.ts` once, then passed; `npx tsc --noEmit` and `npm run build` passed (main chunk 1526.63 kB). Through the app IPC against the Docker emulator: policy with versions, role, group, user, attach and detach, inline policy, tags, access key create, deactivate and list; Node.js and Python functions created and invoked, deploy with an added file and with an unchanged file, version, alias create, update and delete, tags, configuration update, resource policy and function URL reads. In the dev app: 31 IAM and Lambda routes rendered with no console error; user wizard, role wizard, user group form, policy form and Create function form created their resources; attach, detach, inline policy create and the typed delete of a user worked.
-- Defects found and fixed in this phase: a second Lambda update right after an update got HTTP 409 (cause and fix in ASD-D33); the Code tab started as unsaved because its first snapshot differed from the empty file list, which held every navigation behind the Leave page modal; the Code tab's file column did not span a quarter of the width (changed to a grid).
-- Not verified: the access key modal that shows the secret once (Create access key is disabled, ASD-Q14); the configuration edit modal (disabled, ASD-Q14); alias create and edit and version publish from the page; a container image function; the Triggers table with a real event source mapping; HTTP 501 from a real 501; Windows CI (push not authorized).
-- Open: ASD-Q13 (Lambda keeps one function namespace for every Region, the list shows all with a Region column), ASD-Q14 (whether Create access key and Edit configuration stay disabled).
+- Defects found and fixed in this phase: a second Lambda update right after an update got HTTP 409 (cause and fix in ASD-D33); the Code tab started as unsaved because its first snapshot differed from the empty file list, which held every navigation behind the Leave page modal; the Code tab's file column did not span a quarter of the width (changed to a grid); the Create alias button was disabled because it asked the matrix about the `FunctionVersion` feature, which the emulator refuses only for `$LATEST.PUBLISHED` (feature removed from the button).
+- Verified after ASD-D34 and ASD-D35 (dev app over WebView2 remote debugging, Docker emulator running): Create access key is enabled and opens the dialog that shows the secret once, the key is listed after Done; Edit on the function Configuration tab is enabled and a new description saved from the dialog shows on the page; Publish new version lists the version; Create alias with a chosen version lists the alias.
+- Decisions: ASD-D34 (the Lambda list shows every function with a Region column, the emulator keeps one function namespace for every Region), ASD-D35 (Create access key and Edit function configuration are enabled although partly supported).
 - Risk: IAM state is not enforced by the emulator, so the pages manage identities that do not affect authorization; deleting a user, group or role makes several calls and a failure part way leaves it partly cleaned; an access key's secret crosses IPC once to the WebView; the Region column of the Lambda list is read from the ARN text.
-- Changed files: `src-tauri/Cargo.toml`, `Cargo.lock` (`aws-sdk-iam`, `aws-sdk-lambda`, `zip`, tokio `time`), `src-tauri/src/aws.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/services/` (`mod.rs`, `iam.rs`, `lambda.rs`), `src/bindings.ts`, `src/services/routes.tsx`, `src/services/iam/IamPages.tsx`, `src/services/lambda/LambdaPages.tsx`, `README.md`.
+- Changed files: `src-tauri/Cargo.toml`, `Cargo.lock` (`aws-sdk-iam`, `aws-sdk-lambda`, `zip`, tokio `time`), `src-tauri/src/aws.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/services/` (`mod.rs`, `iam.rs`, `lambda.rs`), `src/bindings.ts`, `src/services/routes.tsx`, `src/services/iam/IamPages.tsx`, `src/services/lambda/LambdaPages.tsx`, `src/capability/index.tsx`, `README.md`.
 
 ## Phase 6: Services wave 3: Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge
 
@@ -264,9 +264,9 @@ Deferred by ASD-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 | Smithy models 118 MB | Large installer | Trimmed bundle in Phase 7 |
 | Emulator per-bucket limit of 64 MiB of object bytes, 1000 objects | Large uploads refused | Acceptance at 60 MiB, limit explained in the upload notice (ASD-D31) |
 | Yellow primary reads load data that may be incomplete | A partial page can miss edge cases of its list | Partly supported banner; other yellow controls disabled (ASD-D32) |
-| Lambda keeps one function namespace for every Region | A Region selector that does not scope the Lambda pages | Region column in the list, help note (ASD-Q13) |
+| Lambda keeps one function namespace for every Region | A Region selector that does not scope the Lambda pages | Region column in the list, help note (ASD-D34) |
 | Lambda refuses an update while a create or update runs | HTTP 409 on deploy, publish or invoke | Backend waits for the function (ASD-D33) |
 
 ## Next action
 
-Phase 5 (IAM, Lambda) is implemented and verified and waits for Kai's approval to close. Phase 6 (Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge) starts only when the owner asks. ASD-Q13 and ASD-Q14 are open and need Kai's answers. The Docker emulator is stopped. Pushing for CI of Phase 2 to Phase 5 code is not yet authorized.
+Phase 5 is complete. Phase 6 (Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge) starts only when the owner asks. ASD-Q7 (native provider install source) stays open and deferred. The Docker emulator is stopped. Pushing for CI of Phase 2 to Phase 5 code is not yet authorized.

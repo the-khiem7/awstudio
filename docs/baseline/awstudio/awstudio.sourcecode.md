@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-16"
-code_ref: "acef8b3"
+code_ref: "251af0c"
 ---
 
 # awstudio - source code
@@ -106,7 +106,7 @@ Routes (hash paths mirroring console paths):
 
 ## Implemented in Phase 5
 
-Committed in `32cc89a` (commands) and `a241ecd` (pages); verification is in the Phase 5 checkpoint of `awstudio.roadmap.md`.
+Committed in `32cc89a` (commands), `a241ecd` (pages), `9fec15b` (enabled yellow operations) and `251af0c`; verification is in the Phase 5 checkpoint of `awstudio.roadmap.md`.
 
 | Path | Role |
 |---|---|
@@ -114,7 +114,7 @@ Committed in `32cc89a` (commands) and `a241ecd` (pages); verification is in the 
 | `src-tauri/src/services/iam.rs` | 41 commands; `PrincipalKind` and `TaggableKind` share the attach, detach, inline policy and tag commands; `decode_document` undoes URL-encoding; user, group and role deletes clean up first; `NewAccessKey` has no `Debug` |
 | `src-tauri/src/services/lambda.rs` | 20 commands; `read_zip` and `write_zip` (files with no text keep their bytes), `package_of` (GetFunction `Code.Location` through `Clients::fetch`), `wait_ready` (ASD-D33), `lambda_invoke` with the decoded log tail |
 | `src/services/iam/IamPages.tsx` | `iamPage(path)`: dashboard, users, groups, roles, policies; `Permissions` (shared by user, group and role), `PolicyPicker`, create wizards for users and roles, access keys tab |
-| `src/services/lambda/LambdaPages.tsx` | `lambdaPage(path)`: dashboard, functions, create form, details with `CodeTab`, `TestTab` (events in localStorage `awstudio.lambda.events.<name>`), configuration sections, `AliasesTab`, `VersionsTab` |
+| `src/capability/index.tsx` | `ENABLED_YELLOW`: yellow operations the owner enabled (`iam:CreateAccessKey`, `lambda:UpdateFunctionConfiguration`, ASD-D35); `judge` returns them enabled | `lambdaPage(path)`: dashboard, functions, create form, details with `CodeTab`, `TestTab` (events in localStorage `awstudio.lambda.events.<name>`), configuration sections, `AliasesTab`, `VersionsTab` |
 
 Routes:
 

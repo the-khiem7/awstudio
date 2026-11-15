@@ -4,14 +4,14 @@ pack: "awstudio"
 document: "introduction"
 status: "active"
 updated: "2026-11-16"
-code_ref: "acef8b3"
+code_ref: "251af0c"
 ---
 
 # awstudio - introduction
 
 ## Scope
 
-`awstudio` is a Tauri v2 desktop app (Windows first, Linux deferred, ASD-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awstudio.hallucination.md` ASD-D1 to ASD-D33.
+`awstudio` is a Tauri v2 desktop app (Windows first, Linux deferred, ASD-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awstudio.hallucination.md` ASD-D1 to ASD-D35.
 
 In scope:
 
@@ -28,7 +28,7 @@ Out of scope until after packaging: embedded mode (ASD-D5).
 
 | Item | State |
 |---|---|
-| Application code | Phase 0 scaffold, Phase 1 runtime providers (Docker, native WSL, attach), Phase 2 session loading, shared SDK clients with the endpoint guard and generated bindings, and Phase 3 capability matrix, console shell, Console Home, Emulator page, Unified Settings, page patterns and per-service support landing pages are committed (Phase 3 complete); Phase 4 console pages and Region-scoped commands for S3, DynamoDB, SQS and SNS are committed (Phase 4 complete); Phase 5 console pages and commands for IAM and Lambda are committed and await approval to close; the other five services still show their support landing page |
+| Application code | Phase 0 scaffold, Phase 1 runtime providers (Docker, native WSL, attach), Phase 2 session loading, shared SDK clients with the endpoint guard and generated bindings, and Phase 3 capability matrix, console shell, Console Home, Emulator page, Unified Settings, page patterns and per-service support landing pages are committed (Phase 3 complete); Phase 4 console pages and Region-scoped commands for S3, DynamoDB, SQS and SNS are committed (Phase 4 complete); Phase 5 console pages and commands for IAM and Lambda are committed (Phase 5 complete); the other five services still show their support landing page |
 | Branch | `main` |
 | Committed | `.gitmodules`, `vendor/aws-emulator`, `vendor/cloudscape-demos`, this pack |
 | Windows CI | verified for Phase 0 (run 43653923870 on `9163495`) and Phase 1 (run 43658052256 on `3283b1a`); Phase 2 to Phase 5 code not run in CI, push not authorized |
@@ -58,7 +58,7 @@ Out of scope until after packaging: embedded mode (ASD-D5).
 - S3 keeps at most 64 MiB of object bytes per bucket, parts of uploads in flight included, 1000 objects per bucket and 10000 objects in total; compile-time constants in `services/service-com-amazonaws-s3-amazons3/src/state.rs`, no flag or variable changes them (ASD-D31).
 - SNS delivers to an SQS subscription only when the queue policy grants `sns.amazonaws.com` `SQS:SendMessage`, as AWS does; without the grant `Publish` succeeds and the queue stays empty (measured in Phase 4).
 - DynamoDB `ItemCount` stays 0 after `PutItem` (measured in Phase 4).
-- Lambda keeps one function namespace for every Region: a function created in `us-east-1` is listed, fetched and invoked from `eu-west-1`, its ARN names `us-east-1`, and the same name in another Region is refused with `ResourceConflictException` (measured in Phase 5, ASD-Q13).
+- Lambda keeps one function namespace for every Region: a function created in `us-east-1` is listed, fetched and invoked from `eu-west-1`, its ARN names `us-east-1`, and the same name in another Region is refused with `ResourceConflictException` (measured in Phase 5, ASD-D34).
 - Lambda `CreateFunction` answers `State` `Pending` and `UpdateFunctionCode` answers `LastUpdateStatus` `InProgress`; invoking or updating meanwhile gets HTTP 409 (ASD-D33). `ListFunctions` carries no `State`.
 - Lambda `GetFunction` hands out `Code.Location` as a presigned URL on the emulator's own endpoint (`https://127.0.0.1:<port>/awslambda-<region>-tasks/...`), valid 600 seconds; a download needs no signature (measured in Phase 5).
 - IAM returns policy documents as plain JSON, not URL-encoded as AWS does; the backend decodes either form. A new emulator already holds one user, `emulator`, created on 1970-01-01. IAM data is global to the session Region and the emulator does not evaluate it when it authorizes requests (measured in Phase 5).
