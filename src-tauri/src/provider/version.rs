@@ -24,7 +24,7 @@ pub fn parse(output: &str) -> Result<VersionInfo> {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 pub struct VersionCheck {
     pub matches: bool,
     pub running_version: String,

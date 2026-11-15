@@ -27,7 +27,7 @@ pub const DEFAULT_PORT: u16 = 9297;
 /// 137, which would discard every emulated resource.
 pub const DEFAULT_MEMORY_LIMIT: &str = "2g";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ProviderKind {
     Docker,
@@ -35,14 +35,14 @@ pub enum ProviderKind {
     Attach,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum RunState {
     Stopped,
     Running,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum Health {
     Healthy,
@@ -51,7 +51,7 @@ pub enum Health {
 }
 
 /// Where the SDK-facing files of one emulator run live. The key filename is one constant.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 pub struct Endpoint {
     pub url: String,
     pub port: u16,
@@ -85,14 +85,14 @@ pub struct StartOptions {
     pub telemetry: bool,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 pub struct VersionInfo {
     pub version: String,
     pub commit: String,
     pub release_date: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 pub struct LogLine {
     pub level: String,
     pub message: String,
@@ -127,7 +127,7 @@ impl Drop for LogStream {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(tag = "kind", content = "detail", rename_all = "snake_case")]
 pub enum ProviderError {
     /// stop and restart discard every emulated resource and need an explicit confirmation.
