@@ -12,15 +12,9 @@ import SpaceBetween from "@cloudscape-design/components/space-between";
 import StatusIndicator from "@cloudscape-design/components/status-indicator";
 import Toggle from "@cloudscape-design/components/toggle";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  api,
-  errorText,
-  type LogLine,
-  type ProviderKind,
-  type Settings,
-  type Status,
-  type VersionCheck,
-} from "./api";
+import { SETTINGS_CHANGED } from "../shell/GlobalNotices";
+import { api, errorText, type LogLine, type ProviderKind, type Settings } from "./api";
+import { useRuntimeStatus } from "./RuntimeStatus";
 import { SdkAccess } from "./SdkAccess";
 
 const KINDS = [
@@ -33,60 +27,48 @@ const MAX_LOG_LINES = 300;
 
 type Pending = "stop" | "restart" | null;
 
+/** Emulator lifecycle, version check, provider settings, SDK access and logs. */
 export function Runtime() {
-  const [status, setStatus] = useState<Status | null>(null);
+  const { status, error: statusError, running, healthy, versionCheck, refresh, markLifecycle } = useRuntimeStatus();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [draft, setDraft] = useState<Settings | null>(null);
   const [working, setWorking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending>(null);
-  const [versionCheck, setVersionCheck] = useState<VersionCheck | null>(null);
   const [logs, setLogs] = useState<LogLine[]>([]);
-  const [noticeTelemetry, setNoticeTelemetry] = useState(true);
   const subscribed = useRef(false);
 
-  const refresh = useCallback(async () => {
-    try {
-      setStatus(await api.status());
-    } catch (e) {
-      setError(errorText(e));
-    }
+  const loadSettings = useCallback(() => {
+    api
+      .getSettings()
+      .then((s) => {
+        setSettings(s);
+        setDraft(s);
+      })
+      .catch((e) => setError(errorText(e)));
   }, []);
 
   useEffect(() => {
-    api.getSettings().then((s) => {
-      setSettings(s);
-      setDraft(s);
-      setNoticeTelemetry(s.telemetry);
-    });
-    refresh();
-    const t = setInterval(refresh, 2000);
-    return () => clearInterval(t);
-  }, [refresh]);
+    loadSettings();
+    window.addEventListener(SETTINGS_CHANGED, loadSettings);
+    return () => window.removeEventListener(SETTINGS_CHANGED, loadSettings);
+  }, [loadSettings]);
 
-  const running = status?.state === "running";
   const busy = working !== null || status?.busy === true;
 
-  // Subscribe to logs and check the version once per run, after the emulator is up.
+  // Subscribe to logs once while the emulator is up.
   useEffect(() => {
     if (!running) {
       subscribed.current = false;
-      setVersionCheck(null);
       return;
     }
     if (subscribed.current) return;
     subscribed.current = true;
     setLogs([]);
-    api
-      .logs((l) => setLogs((prev) => [...prev, l].slice(-MAX_LOG_LINES)))
-      .catch(() => undefined);
-    api
-      .versionCheck()
-      .then(setVersionCheck)
-      .catch(() => setVersionCheck(null));
+    api.logs((l) => setLogs((prev) => [...prev, l].slice(-MAX_LOG_LINES))).catch(() => undefined);
   }, [running]);
 
-  const run = async (label: string, action: () => Promise<void>) => {
+  const run = async (label: string, action: () => Promise<void>, lifecycle = true) => {
     setWorking(label);
     setError(null);
     try {
@@ -95,6 +77,7 @@ export function Runtime() {
       setError(errorText(e));
     } finally {
       setWorking(null);
+      if (lifecycle) markLifecycle();
       refresh();
     }
   };
@@ -107,27 +90,25 @@ export function Runtime() {
   };
 
   const saveDraft = () =>
-    run("Saving", async () => {
-      if (!draft) return;
-      await api.saveSettings(draft);
-      setSettings(draft);
-    });
-
-  const acknowledgeNotice = async () => {
-    await api.ackTelemetryNotice(noticeTelemetry);
-    const s = await api.getSettings();
-    setSettings(s);
-    setDraft(s);
-  };
+    run(
+      "Saving",
+      async () => {
+        if (!draft) return;
+        await api.saveSettings(draft);
+        setSettings(draft);
+      },
+      false,
+    );
 
   const dirty = draft !== null && settings !== null && JSON.stringify(draft) !== JSON.stringify(settings);
   const attach = settings?.provider === "attach";
+  const shownError = error ?? statusError;
 
   return (
     <SpaceBetween size="l">
-      {error && (
+      {shownError && (
         <Alert type="error" dismissible onDismiss={() => setError(null)} header="Runtime error">
-          <Box variant="code">{error}</Box>
+          <Box variant="code">{shownError}</Box>
         </Alert>
       )}
 
@@ -137,7 +118,7 @@ export function Runtime() {
           header="The running emulator differs from the pinned build"
           action={
             settings?.provider === "docker" ? (
-              <Button disabled={busy} onClick={() => run("Building image", api.rebuildImage)}>
+              <Button disabled={busy} onClick={() => run("Building image", api.rebuildImage, false)}>
                 Rebuild image at pinned version
               </Button>
             ) : undefined
@@ -177,7 +158,7 @@ export function Runtime() {
               </SpaceBetween>
             }
           >
-            Emulator
+            Status
           </Header>
         }
       >
@@ -203,6 +184,25 @@ export function Runtime() {
           <div>
             <Box variant="awsui-key-label">Provider</Box>
             <Box>{KINDS.find((k) => k.value === settings?.provider)?.label ?? "-"}</Box>
+          </div>
+          <div>
+            <Box variant="awsui-key-label">Version</Box>
+            {versionCheck ? (
+              <StatusIndicator type={versionCheck.matches ? "success" : "warning"}>
+                {versionCheck.running_version} ({versionCheck.matches ? "matches the pinned build" : `pinned ${versionCheck.pinned_version}`})
+              </StatusIndicator>
+            ) : (
+              <Box color="text-body-secondary">{healthy ? "Not reported by this provider" : "-"}</Box>
+            )}
+          </div>
+          <div>
+            <Box variant="awsui-key-label">Telemetry</Box>
+            <StatusIndicator type={settings?.telemetry ? "info" : "stopped"}>
+              {settings ? (settings.telemetry ? "On" : "Off") : "-"}
+            </StatusIndicator>
+            <Box variant="small" display="block" color="text-body-secondary">
+              A change applies on the next start.
+            </Box>
           </div>
         </ColumnLayout>
       </Container>
@@ -254,7 +254,7 @@ export function Runtime() {
         )}
       </Container>
 
-      <SdkAccess running={running && status?.health === "healthy"} />
+      <SdkAccess running={healthy} />
 
       <Container header={<Header variant="h2">Logs</Header>}>
         <Box variant="code">
@@ -283,30 +283,6 @@ export function Runtime() {
       >
         The emulator keeps every emulated resource in memory. {pending === "stop" ? "Stopping" : "Restarting"} it deletes
         all of them, and its access keys change.
-      </Modal>
-
-      <Modal
-        visible={settings !== null && !settings.telemetry_notice_seen}
-        onDismiss={() => undefined}
-        header="Emulator telemetry"
-        footer={
-          <Box float="right">
-            <Button variant="primary" onClick={acknowledgeNotice}>
-              Continue
-            </Button>
-          </Box>
-        }
-      >
-        <SpaceBetween size="m">
-          <Box>
-            AWS Emulator collects usage data and reports it to AWS. It is on by default. The data excludes request
-            and response content, resource names, credentials and personal data. This app is not affiliated with AWS.
-          </Box>
-          <Toggle checked={noticeTelemetry} onChange={({ detail }) => setNoticeTelemetry(detail.checked)}>
-            Send emulator telemetry
-          </Toggle>
-          <Box color="text-body-secondary">You can change this later under Provider.</Box>
-        </SpaceBetween>
       </Modal>
     </SpaceBetween>
   );
