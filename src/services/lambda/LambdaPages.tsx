@@ -727,7 +727,7 @@ function AliasesTab({ name }: { name: string }) {
           },
         ]}
         empty={<Box textAlign="center" color="inherit">No aliases. An alias is a pointer to a published version.</Box>}
-        header={<Header variant="h2" counter={`(${aliases.data?.length ?? 0})`} actions={<GatedButton variant="primary" op="lambda:CreateAlias" feature="FunctionVersion" onClick={() => { versions.reload(); setEditing({ alias: "", version: "", description: "", isNew: true }); }}>Create alias</GatedButton>}>Aliases</Header>}
+        header={<Header variant="h2" counter={`(${aliases.data?.length ?? 0})`} actions={<GatedButton variant="primary" op="lambda:CreateAlias" onClick={() => { versions.reload(); setEditing({ alias: "", version: "", description: "", isNew: true }); }}>Create alias</GatedButton>}>Aliases</Header>}
       />
       <FormModal
         visible={editing !== null}
