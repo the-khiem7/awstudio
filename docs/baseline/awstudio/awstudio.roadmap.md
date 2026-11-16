@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "roadmap"
 status: "active"
 updated: "2026-11-16"
-code_ref: "0c0182b"
+code_ref: "0b9e6f4"
 ---
 
 # awstudio - roadmap
@@ -20,7 +20,7 @@ code_ref: "0c0182b"
 | Phase 4 | Services wave 1: S3, DynamoDB, SQS, SNS | complete | Phase 3 |
 | Phase 5 | Services wave 2: IAM, Lambda | complete | Phase 4 |
 | Phase 6 | Services wave 3: Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge | complete | Phase 5 |
-| Phase 7 | API Console, fidelity catalog, seed scripts | planned | Phase 3 |
+| Phase 7 | API Console, fidelity catalog, seed scripts | in progress | Phase 3 |
 | Phase 8 | Packaging | planned | Phase 6, Phase 7 |
 | Phase 9 | Embedded mode spike | deferred | Phase 8 |
 
@@ -242,7 +242,8 @@ Checkpoint (pages and commands implemented, committed in `2f349df` (commands), `
 - Evidence: `cargo test --lib` 62 passed (12 new); `cargo test --test bindings` regenerated `src/bindings.ts` once, then passed; `npx tsc --noEmit` and `npm run build` passed (main chunk 1756.73 kB). Through the app IPC against the Docker emulator: secrets (create, read, version, tags, policy, delete, restore), keys (create, alias, rotation, policy, tags, schedule and cancel deletion), log groups (streams, events, metric filters, tags, saved queries, an Insights query), EventBridge (buses, rules, targets, PutEvents, archives, tags), Parameter Store (put, history, labels, tags, delete), OpsItems, documents, Automation, activations, resource data syncs, service settings and a patch baseline. In the dev app over WebView2 remote debugging: 60 routes rendered with no load error; the secrets wizard and value Retrieve (cleared on tab change), SecureString parameter create, decrypt on click and edit, Create key wizard with alias, log group, stream and test events with filter, Insights run, rule wizard with SQS target, Send events, patch baseline, document, Automation execution and activation code dialog.
 - Defects found and fixed in this phase: the EventBridge target form sent PutTargets without the queue policy grant, so events never reached the queue (cause and fix in ASD-D36); the patch baseline form sent no approved patches and the emulator refused it (ASD-D37); the rules list put a form field inside the table header description, which React reported as invalid nesting (field moved above the table).
 - Not verified: targets of types other than SQS; delete and restore of a secret and of a key from the pages; the metric filter, tag, rotation, grant, OpsItem edit and settings Edit modals; the asymmetric key branch of the Create key wizard; rotation with a real Lambda function; subscription filters with a real destination; Run Command, State Manager, Fleet Manager and Inventory against a managed node; the release build window.
-- Windows CI: verified for the code of Phase 2 to Phase 6, GitHub Actions run 43798204146 on commit `c63286e` passed (job `windows`, 10m40s); the push went to the repository's new address, which GitHub reported as moved., ListAliases, StartQuery and GetQueryResults are enabled although partly supported), ASD-D39 (ListQueues stays disabled outside the SQS pages).
+- Windows CI: verified for the code of Phase 2 to Phase 6, GitHub Actions run 43798204146 on commit `c63286e` passed (job `windows`, 10m40s); the push went to the repository's new address, which GitHub reported as moved.
+- Decisions of the phase's close: ASD-D38 (PutTargets, ListAliases, StartQuery and GetQueryResults are enabled although partly supported), ASD-D39 (ListQueues stays disabled outside the SQS pages).
 - Risk: Region partitioning was measured only for Secrets Manager (a secret in `us-east-1` is not listed in `eu-west-1`), not for the other four services; the rules list shows an `Events-Archive-<name>` rule the emulator creates for each archive and the pages leave managed rules read-only; creating an activation needs an existing IAM role that trusts `ssm.amazonaws.com`; rotation and subscription filters validate the Lambda function and its permission; AWS-owned Automation documents such as `AWS-RestartEC2Instance` do not exist, so Automation needs a document the user created.
 - Changed files: `src-tauri/Cargo.toml`, `Cargo.lock` (`aws-sdk-secretsmanager`, `aws-sdk-ssm`, `aws-sdk-kms`, `aws-sdk-cloudwatchlogs`, `aws-sdk-eventbridge`), `src-tauri/src/aws.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/services/` (`mod.rs`, `secretsmanager.rs`, `kms.rs`, `logs.rs`, `eventbridge.rs`, `ssm.rs`), `src/bindings.ts`, `src/services/routes.tsx`, `src/services/secretsmanager/SecretsManagerPages.tsx`, `src/services/kms/KmsPages.tsx`, `src/services/logs/LogsPages.tsx`, `src/services/eventbridge/EventBridgePages.tsx`, `src/services/ssm/` (`shell.tsx`, `SsmPages.tsx`, `ParameterStore.tsx`, `OpsCenter.tsx`, `SsmSettings.tsx`, `SsmAreas.tsx`), `README.md`.
 ## Phase 7: API Console, fidelity catalog, seed scripts
@@ -255,6 +256,21 @@ Tasks:
 
 Acceptance: an operation of a service outside the 11 runs from the API Console and shows its response.
 
+Checkpoint (paused after the generator and the backend; the pages are not started):
+
+| Task | State |
+|---|---|
+| 1 API Console: trimmed bundle | done: `tools/apimodel-gen/apimodel_gen.py` writes `src/apimodel/<service key>.json` for 436 services, 19451 operations, 8.01 MB (the originals are 118 MB); 18956 operations carry a CLI name the installed AWS CLI v2 accepts, 11 services have none (for example `cloudwatch-events`) |
+| 1 API Console: execution | backend done: `api_run` runs `aws <service> <operation> --cli-input-json` with an argument array, the emulator environment and the cleared real-credential variables, `--endpoint-url` pinned, 90 s timeout, 4 MiB output cap; `api_cli_info` returns the CLI version; not run against a live emulator yet |
+| 1 API Console: page and form | not started |
+| 2 Fidelity catalog | data done: `src/capability/issues.json` holds 6449 open vendor issues, 98 of which name no service; page not started |
+| 3 Seed scripts | backend done: `seed_list`, `seed_load`, `seed_save`, `seed_delete` store JSON in `<app config>/seeds`; replay page not started |
+
+- Evidence: `cargo test --lib` 69 passed (7 new); `cargo test --test bindings` regenerated `src/bindings.ts` once, then passed; `npx tsc --noEmit` passed. The generator ran twice with the same 436 service keys as `capability.json`.
+- Issue matching is heuristic: an issue belongs to a service by its `Issue-Shape-Id`, by the services named in its `Issue-Key`, or by the first word of its file name; a word shared by several services names none of them (`lambda`, `events` and `logs` map to the console services). Per service the file keeps the 100 most severe.
+- Next: the API Console page (service and operation pickers, form from the bundle with a JSON tab, Run, response and command panes, Add to seed script), the fidelity catalog page (route, tier bars, issue links to the vendor repository at the pinned commit), the seed scripts page (list, edit, replay with progress); then run an operation of a service outside the 11 against the Docker emulator and record the response; Windows CI.
+- Changed files: `tools/apimodel-gen/apimodel_gen.py`, `src/apimodel/`, `src/capability/issues.json`, `src-tauri/src/services/apiconsole.rs`, `src-tauri/src/services/mod.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/commands.rs` (`dir`, `env_vars`), `src/bindings.ts`.
+- Risk: the bundle needs the installed AWS CLI at generation time and on the user's machine at run time (ASD-D8); a streaming request body (`s3api put-object --body`) has no form field; a streaming response is written to a temporary file and discarded.
 ## Phase 8: Packaging
 
 Tasks: per-user NSIS installer on Windows (Linux packaging deferred, ASD-D7), Tauri updater, signing per ASD-D19, About page with licenses and NOTICE files.
@@ -286,4 +302,4 @@ Deferred by ASD-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 
 ## Next action
 
-Phase 6 is complete. Phase 7 (API Console, fidelity catalog, seed scripts) starts only when the owner asks. ASD-Q7 (native provider install source) stays open and deferred. The Docker emulator is stopped. Windows CI of the Phase 2 to Phase 6 code passed on `c63286e`.
+Phase 7 is in progress and paused after the generator and the backend: build the three pages next (see the Phase 7 checkpoint). ASD-Q7 (native provider install source) stays open and deferred. The Docker emulator is stopped. Windows CI of the Phase 2 to Phase 6 code passed on `c63286e`.

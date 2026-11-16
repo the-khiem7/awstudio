@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "introduction"
 status: "active"
 updated: "2026-11-16"
-code_ref: "0c0182b"
+code_ref: "0b9e6f4"
 ---
 
 # awstudio - introduction

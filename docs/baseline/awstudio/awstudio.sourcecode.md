@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-16"
-code_ref: "0c0182b"
+code_ref: "0b9e6f4"
 ---
 
 # awstudio - source code
@@ -153,6 +153,17 @@ Routes:
 | EventBridge | `/events/rules?bus=`, `/events/rules/create`, `/events/rule?bus=&name=&tab=targets\|pattern\|tags`, `/events/buses`, `/events/buses/create`, `/events/archives`, `/events/archives/create`, `/events/send-events` |
 | Systems Manager | `/systems-manager/{parameters,opsitems,automation,maintenance-windows,fleet-manager,compliance,inventory,activations,session-manager,run-command,state-manager,patch-manager,documents,resource-data-sync,settings}`, plus `parameters/create`, `parameters/detail?name=`, `opsitems/create`, `opsitems/detail?id=`, `automation/execute`, `automation/detail?id=`, `activations/create`, `run-command/run`, `state-manager/create`, `patch-manager/create-baseline`, `documents/create`, `documents/detail?name=`, `resource-data-sync/create` |
 
+## Implemented in Phase 7 (in progress)
+
+Generator and backend only; the pages are not written. Verification is in the Phase 7 checkpoint of `awstudio.roadmap.md`.
+
+| Path | Role |
+|---|---|
+| `tools/apimodel-gen/apimodel_gen.py` | Reads the pinned Smithy models and the installed AWS CLI's `ac.index` command table; writes the trimmed bundle and the open-issue index |
+| `src/apimodel/<service key>.json` | Per service: title `n`, CLI service `cli`, operations `ops` (`c` CLI name, `i` input shape, `st` streaming response) and `shapes` (`s` structure, `u` union, `l` list, `m` map, `e` enum; a member is `[target]` or `[target, 1]` when required; `@str @int @num @bool @ts @blob @doc` are primitives) |
+| `src/capability/issues.json` | Per service key: open vendor issue count and up to 100 items `[file, severity, title]`, most severe first |
+| `src-tauri/src/services/apiconsole.rs` | `api_run`, `api_cli_info`, `seed_list`, `seed_load`, `seed_save`, `seed_delete`; names validated before the CLI is spawned |
+| `src-tauri/src/commands.rs` | `Runtime::dir` and `Runtime::env_vars` for the API Console |
 ## Planned architecture
 
 ```mermaid
