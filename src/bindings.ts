@@ -240,6 +240,183 @@ export const commands = {
 	lambdaGetPolicy: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<string | null>("lambda_get_policy", { region, name }, options),
 	lambdaListTags: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("lambda_list_tags", { region, arn }, options),
 	lambdaUpdateTags: (region: string, arn: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("lambda_update_tags", { region, arn, set, remove }, options),
+	/**  Lists the secrets of the Region, including the ones scheduled for deletion. */
+	smListSecrets: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SmSecretSummary_Serialize[]>("sm_list_secrets", { region }, options),
+	/**  Describes one secret. `id` is the name or the ARN. */
+	smDescribeSecret: (region: string, id: string, options?: InvokeOptions) => __TAURI_INVOKE<SmSecretDetails_Serialize>("sm_describe_secret", { region, id }, options),
+	/**  Creates a secret and returns its ARN. */
+	smCreateSecret: (region: string, input: SmCreateInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("sm_create_secret", { region, input }, options),
+	/**  Reads a secret value; without `version_id` and `version_stage` it returns `AWSCURRENT`. */
+	smGetSecretValue: (region: string, id: string, versionId: string | null, versionStage: string | null, options?: InvokeOptions) => __TAURI_INVOKE<SmSecretValue_Serialize>("sm_get_secret_value", { region, id, versionId, versionStage }, options),
+	/**  Stores a new version and returns its version id. */
+	smPutSecretValue: (region: string, id: string, secretString: string | null, secretBinaryBase64: string | null, options?: InvokeOptions) => __TAURI_INVOKE<string>("sm_put_secret_value", { region, id, secretString, secretBinaryBase64 }, options),
+	/**  Changes the description and the KMS key; `None` leaves a field as it is. */
+	smUpdateSecret: (region: string, id: string, description: string | null, kmsKeyId: string | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("sm_update_secret", { region, id, description, kmsKeyId }, options),
+	/**  Deletes a secret: scheduled after `recovery_window_days` (default 30 on the service side) or at once with `force_delete`. */
+	smDeleteSecret: (region: string, id: string, recoveryWindowDays: number | null, forceDelete: boolean, options?: InvokeOptions) => __TAURI_INVOKE<null>("sm_delete_secret", { region, id, recoveryWindowDays, forceDelete }, options),
+	/**  Cancels the scheduled deletion of a secret. */
+	smRestoreSecret: (region: string, id: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("sm_restore_secret", { region, id }, options),
+	/**  Lists the versions of a secret, deprecated ones included. */
+	smListSecretVersions: (region: string, id: string, options?: InvokeOptions) => __TAURI_INVOKE<SmSecretVersion_Serialize[]>("sm_list_secret_versions", { region, id }, options),
+	/**  Sets `set` and removes `remove`, the difference the "Manage tags" page saves. */
+	smUpdateTags: (region: string, id: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("sm_update_tags", { region, id, set, remove }, options),
+	/**  Reads the resource policy; `None` when the secret has none. */
+	smGetResourcePolicy: (region: string, id: string, options?: InvokeOptions) => __TAURI_INVOKE<string | null>("sm_get_resource_policy", { region, id }, options),
+	smPutResourcePolicy: (region: string, id: string, policy: string, blockPublic: boolean, options?: InvokeOptions) => __TAURI_INVOKE<null>("sm_put_resource_policy", { region, id, policy, blockPublic }, options),
+	smDeleteResourcePolicy: (region: string, id: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("sm_delete_resource_policy", { region, id }, options),
+	/**  Configures rotation (Lambda and schedule) and optionally rotates at once. */
+	smRotateSecret: (region: string, id: string, rotationLambdaArn: string | null, automaticallyAfterDays: number | null, rotateImmediately: boolean, options?: InvokeOptions) => __TAURI_INVOKE<null>("sm_rotate_secret", { region, id, rotationLambdaArn, automaticallyAfterDays, rotateImmediately }, options),
+	/**  Generates a random password. The result is sensitive. */
+	smGetRandomPassword: (region: string, length: number, excludePunctuation: boolean, options?: InvokeOptions) => __TAURI_INVOKE<string>("sm_get_random_password", { region, length, excludePunctuation }, options),
+	/**  Lists every key, then describes each one for its state and attributes. */
+	kmsListKeys: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<KmsKey_Serialize[]>("kms_list_keys", { region }, options),
+	kmsDescribeKey: (region: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<KmsKey_Serialize>("kms_describe_key", { region, keyId }, options),
+	kmsCreateKey: (region: string, input: KmsCreateKeyInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<KmsKey_Serialize>("kms_create_key", { region, input }, options),
+	kmsEnableKey: (region: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_enable_key", { region, keyId }, options),
+	kmsDisableKey: (region: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_disable_key", { region, keyId }, options),
+	/**  Schedules the deletion and returns the deletion date as RFC 3339 text, when the response carries one. */
+	kmsScheduleKeyDeletion: (region: string, keyId: string, pendingWindowDays: number, options?: InvokeOptions) => __TAURI_INVOKE<string | null>("kms_schedule_key_deletion", { region, keyId, pendingWindowDays }, options),
+	kmsCancelKeyDeletion: (region: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_cancel_key_deletion", { region, keyId }, options),
+	kmsGetRotationStatus: (region: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<KmsRotation_Serialize>("kms_get_rotation_status", { region, keyId }, options),
+	/**  Turns automatic rotation on (with an optional period in days) or off. `period_in_days` is ignored when disabling. */
+	kmsSetRotation: (region: string, keyId: string, enabled: boolean, periodInDays: number | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_set_rotation", { region, keyId, enabled, periodInDays }, options),
+	kmsRotateOnDemand: (region: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_rotate_on_demand", { region, keyId }, options),
+	/**  The key policy named `default`, the only policy name KMS supports. */
+	kmsGetKeyPolicy: (region: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<string>("kms_get_key_policy", { region, keyId }, options),
+	kmsPutKeyPolicy: (region: string, keyId: string, policy: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_put_key_policy", { region, keyId, policy }, options),
+	/**  Lists aliases, of one key when `key_id` is given, otherwise of the whole Region. */
+	kmsListAliases: (region: string, keyId: string | null, options?: InvokeOptions) => __TAURI_INVOKE<KmsAlias_Serialize[]>("kms_list_aliases", { region, keyId }, options),
+	/**  `alias_name` carries the `alias/` prefix KMS requires. */
+	kmsCreateAlias: (region: string, aliasName: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_create_alias", { region, aliasName, keyId }, options),
+	kmsDeleteAlias: (region: string, aliasName: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_delete_alias", { region, aliasName }, options),
+	/**  Points an existing alias at another key. */
+	kmsUpdateAlias: (region: string, aliasName: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_update_alias", { region, aliasName, keyId }, options),
+	kmsListTags: (region: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("kms_list_tags", { region, keyId }, options),
+	/**  Sets `set` and removes `remove`, the difference the "Manage tags" page saves. */
+	kmsUpdateTags: (region: string, keyId: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_update_tags", { region, keyId, set, remove }, options),
+	kmsUpdateDescription: (region: string, keyId: string, description: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_update_description", { region, keyId, description }, options),
+	kmsListGrants: (region: string, keyId: string, options?: InvokeOptions) => __TAURI_INVOKE<KmsGrant_Serialize[]>("kms_list_grants", { region, keyId }, options),
+	kmsRevokeGrant: (region: string, keyId: string, grantId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("kms_revoke_grant", { region, keyId, grantId }, options),
+	/**  Lists the log groups, optionally only those whose name starts with `name_prefix`. */
+	logsListGroups: (region: string, namePrefix: string | null, options?: InvokeOptions) => __TAURI_INVOKE<LogsGroup_Serialize[]>("logs_list_groups", { region, namePrefix }, options),
+	/**  Creates a log group, then applies the retention when one is given (CreateLogGroup has no retention argument). */
+	logsCreateGroup: (region: string, name: string, retentionDays: number | null, kmsKeyId: string | null, tags: Tag[], options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_create_group", { region, name, retentionDays, kmsKeyId, tags }, options),
+	logsDeleteGroup: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_delete_group", { region, name }, options),
+	/**  Sets the retention in days, or removes it (never expire) when `days` is `None`. */
+	logsSetRetention: (region: string, group: string, days: number | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_set_retention", { region, group, days }, options),
+	/**  Lists the streams of a group, newest event first. With a prefix the API only orders by stream name. */
+	logsListStreams: (region: string, group: string, namePrefix: string | null, options?: InvokeOptions) => __TAURI_INVOKE<LogsStream_Serialize[]>("logs_list_streams", { region, group, namePrefix }, options),
+	logsCreateStream: (region: string, group: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_create_stream", { region, group, name }, options),
+	logsDeleteStream: (region: string, group: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_delete_stream", { region, group, name }, options),
+	/**  Reads one page of the events of a stream. Not paged to the end: the caller follows the tokens. */
+	logsGetEvents: (region: string, input: LogsGetEventsInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<LogsEventsPage_Serialize>("logs_get_events", { region, input }, options),
+	/**  Searches the events of a group with a filter pattern. One page per call: the caller follows `next_token`. */
+	logsFilterEvents: (region: string, input: LogsFilterInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<LogsFilteredPage_Serialize>("logs_filter_events", { region, input }, options),
+	/**  Writes events to a stream. The caller should send them in timestamp order, as the API requires. */
+	logsPutEvents: (region: string, group: string, stream: string, events: LogsNewEvent[], options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_put_events", { region, group, stream, events }, options),
+	logsListMetricFilters: (region: string, group: string, options?: InvokeOptions) => __TAURI_INVOKE<LogsMetricFilter_Serialize[]>("logs_list_metric_filters", { region, group }, options),
+	/**  Creates or replaces a metric filter with a single metric transformation. */
+	logsPutMetricFilter: (region: string, group: string, name: string, pattern: string, metricName: string, metricNamespace: string, metricValue: string, defaultValue: number | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_put_metric_filter", { region, group, name, pattern, metricName, metricNamespace, metricValue, defaultValue }, options),
+	logsDeleteMetricFilter: (region: string, group: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_delete_metric_filter", { region, group, name }, options),
+	logsListSubscriptionFilters: (region: string, group: string, options?: InvokeOptions) => __TAURI_INVOKE<LogsSubscriptionFilter_Serialize[]>("logs_list_subscription_filters", { region, group }, options),
+	/**  Creates or replaces a subscription filter. The emulator supports this only partly; its errors come through unchanged. */
+	logsPutSubscriptionFilter: (region: string, group: string, name: string, pattern: string, destinationArn: string, roleArn: string | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_put_subscription_filter", { region, group, name, pattern, destinationArn, roleArn }, options),
+	logsDeleteSubscriptionFilter: (region: string, group: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_delete_subscription_filter", { region, group, name }, options),
+	/**  Lists the tags of a log group; `group_arn` may carry the trailing `:*`, which is removed. */
+	logsListTags: (region: string, groupArn: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("logs_list_tags", { region, groupArn }, options),
+	/**  Sets `set` and removes `remove`, the difference the "Manage tags" page saves. */
+	logsUpdateTags: (region: string, groupArn: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_update_tags", { region, groupArn, set, remove }, options),
+	/**  Starts a Logs Insights query and returns its query id. */
+	logsStartQuery: (region: string, input: LogsStartQueryInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("logs_start_query", { region, input }, options),
+	logsGetQueryResults: (region: string, queryId: string, options?: InvokeOptions) => __TAURI_INVOKE<LogsQueryResults>("logs_get_query_results", { region, queryId }, options),
+	logsListQueryDefinitions: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<LogsQueryDefinition[]>("logs_list_query_definitions", { region }, options),
+	/**  Saves a query definition and returns its id. A given `id` replaces that definition; `None` creates a new one. */
+	logsPutQueryDefinition: (region: string, name: string, queryString: string, logGroups: string[], id: string | null, options?: InvokeOptions) => __TAURI_INVOKE<string>("logs_put_query_definition", { region, name, queryString, logGroups, id }, options),
+	logsDeleteQueryDefinition: (region: string, id: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("logs_delete_query_definition", { region, id }, options),
+	eventsListBuses: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<EventsBus_Serialize[]>("events_list_buses", { region }, options),
+	/**  Creates a custom event bus and returns its ARN. */
+	eventsCreateBus: (region: string, name: string, description: string | null, options?: InvokeOptions) => __TAURI_INVOKE<string>("events_create_bus", { region, name, description }, options),
+	eventsDeleteBus: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("events_delete_bus", { region, name }, options),
+	/**  Lists the rules of a bus; an empty `bus` is the default bus. */
+	eventsListRules: (region: string, bus: string, options?: InvokeOptions) => __TAURI_INVOKE<EventsRule_Serialize[]>("events_list_rules", { region, bus }, options),
+	eventsDescribeRule: (region: string, bus: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<EventsRule_Serialize>("events_describe_rule", { region, bus, name }, options),
+	/**  Creates or updates a rule and returns its ARN. */
+	eventsPutRule: (region: string, input: EventsPutRuleInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("events_put_rule", { region, input }, options),
+	/**  Enables or disables a rule (`EnableRule` or `DisableRule`). */
+	eventsSetRuleState: (region: string, bus: string, name: string, enabled: boolean, options?: InvokeOptions) => __TAURI_INVOKE<null>("events_set_rule_state", { region, bus, name, enabled }, options),
+	/**  Deletes a rule. AWS refuses to delete a rule that still has targets, so this lists the targets (`ListTargetsByRule`) and removes them all (`RemoveTargets`) before it calls `DeleteRule`. */
+	eventsDeleteRule: (region: string, bus: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("events_delete_rule", { region, bus, name }, options),
+	eventsListTargets: (region: string, bus: string, rule: string, options?: InvokeOptions) => __TAURI_INVOKE<EventsTarget_Serialize[]>("events_list_targets", { region, bus, rule }, options),
+	/**  Adds or replaces targets by id. A response that lists failed entries becomes an `Aws` error with the first entry's code and message. */
+	eventsPutTargets: (region: string, bus: string, rule: string, targets: EventsTarget_Deserialize[], options?: InvokeOptions) => __TAURI_INVOKE<null>("events_put_targets", { region, bus, rule, targets }, options),
+	eventsRemoveTargets: (region: string, bus: string, rule: string, ids: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("events_remove_targets", { region, bus, rule, ids }, options),
+	/**  Sends events. A rejected entry is reported in its result with an error code, not as a command error; the results keep the order of `entries`. */
+	eventsPutEvents: (region: string, entries: EventsEntry_Deserialize[], options?: InvokeOptions) => __TAURI_INVOKE<EventsPutResult_Serialize[]>("events_put_events", { region, entries }, options),
+	/**  True when the event matches the pattern. */
+	eventsTestEventPattern: (region: string, pattern: string, event: string, options?: InvokeOptions) => __TAURI_INVOKE<boolean>("events_test_event_pattern", { region, pattern, event }, options),
+	/**  Lists archives. `bus_name` keeps only the archives of that bus, matched on the bus ARN in the archive's event source, so the filter applies here and not in the request. */
+	eventsListArchives: (region: string, busName: string | null, options?: InvokeOptions) => __TAURI_INVOKE<EventsArchive_Serialize[]>("events_list_archives", { region, busName }, options),
+	eventsCreateArchive: (region: string, name: string, eventSourceArn: string, description: string | null, eventPattern: string | null, retentionDays: number | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("events_create_archive", { region, name, eventSourceArn, description, eventPattern, retentionDays }, options),
+	eventsDeleteArchive: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("events_delete_archive", { region, name }, options),
+	eventsListTags: (region: string, arn: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("events_list_tags", { region, arn }, options),
+	/**  Sets `set` and removes `remove`, the difference the "Manage tags" page saves. */
+	eventsUpdateTags: (region: string, arn: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("events_update_tags", { region, arn, set, remove }, options),
+	ssmDescribeParameters: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmParameterMeta_Serialize[]>("ssm_describe_parameters", { region }, options),
+	ssmGetParameter: (region: string, name: string, decrypt: boolean, options?: InvokeOptions) => __TAURI_INVOKE<SsmParameterValue_Serialize>("ssm_get_parameter", { region, name, decrypt }, options),
+	ssmGetParameterHistory: (region: string, name: string, decrypt: boolean, options?: InvokeOptions) => __TAURI_INVOKE<SsmParameterVersion_Serialize[]>("ssm_get_parameter_history", { region, name, decrypt }, options),
+	/**  Creates or overwrites a parameter and returns the new version. */
+	ssmPutParameter: (region: string, input: SsmPutParameterInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<number | null>("ssm_put_parameter", { region, input }, options),
+	/**  Deletes parameters; one name uses `DeleteParameter`, several use `DeleteParameters` in batches of ten, the API limit. */
+	ssmDeleteParameters: (region: string, names: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_delete_parameters", { region, names }, options),
+	/**  Attaches labels to a version, to the latest one when `version` is empty. */
+	ssmLabelVersion: (region: string, name: string, version: number | null, labels: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_label_version", { region, name, version, labels }, options),
+	ssmUnlabelVersion: (region: string, name: string, version: number | null, labels: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_unlabel_version", { region, name, version, labels }, options),
+	ssmListTags: (region: string, resourceType: string, resourceId: string, options?: InvokeOptions) => __TAURI_INVOKE<Tag[]>("ssm_list_tags", { region, resourceType, resourceId }, options),
+	/**  Sets `set` and removes `remove`, the difference the "Manage tags" page saves. `resource_type` is `Parameter`, `Document`, `OpsItem` and so on. */
+	ssmUpdateTags: (region: string, resourceType: string, resourceId: string, set: Tag[], remove: string[], options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_update_tags", { region, resourceType, resourceId, set, remove }, options),
+	ssmListOpsItems: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmOpsItemSummary_Serialize[]>("ssm_list_ops_items", { region }, options),
+	ssmGetOpsItem: (region: string, id: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmOpsItem_Serialize>("ssm_get_ops_item", { region, id }, options),
+	/**  Creates an OpsItem and returns its id. */
+	ssmCreateOpsItem: (region: string, input: SsmCreateOpsItemInput_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<string>("ssm_create_ops_item", { region, input }, options),
+	/**  Changes only the fields that are set. */
+	ssmUpdateOpsItem: (region: string, id: string, title: string | null, description: string | null, status: string | null, priority: number | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_update_ops_item", { region, id, title, description, status, priority }, options),
+	ssmDeleteOpsItem: (region: string, id: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_delete_ops_item", { region, id }, options),
+	ssmDescribeDocument: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmDocumentInfo_Serialize>("ssm_describe_document", { region, name }, options),
+	/**  Reads the content of a document version, the default version when `version` is empty. */
+	ssmGetDocument: (region: string, name: string, version: string | null, options?: InvokeOptions) => __TAURI_INVOKE<SsmDocumentContent>("ssm_get_document", { region, name, version }, options),
+	/**  `document_type` is `Command`, `Automation`, `Session` and so on; `document_format` is `JSON`, `YAML` or `TEXT`. */
+	ssmCreateDocument: (region: string, name: string, content: string, documentType: string, documentFormat: string, targetType: string | null, tags: Tag[], options?: InvokeOptions) => __TAURI_INVOKE<SsmDocumentInfo_Serialize>("ssm_create_document", { region, name, content, documentType, documentFormat, targetType, tags }, options),
+	/**  Stores `content` as a new version of the document and returns its version number. */
+	ssmUpdateDocument: (region: string, name: string, content: string, documentFormat: string | null, options?: InvokeOptions) => __TAURI_INVOKE<string>("ssm_update_document", { region, name, content, documentFormat }, options),
+	ssmSetDefaultDocumentVersion: (region: string, name: string, version: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_set_default_document_version", { region, name, version }, options),
+	ssmDeleteDocument: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_delete_document", { region, name }, options),
+	/**  Lists executions, or the one execution `execution_id` names (then with its parameters). */
+	ssmDescribeAutomationExecutions: (region: string, executionId: string | null, options?: InvokeOptions) => __TAURI_INVOKE<SsmAutomationExecution_Serialize[]>("ssm_describe_automation_executions", { region, executionId }, options),
+	/**  Starts an automation and returns its execution id. */
+	ssmStartAutomation: (region: string, documentName: string, parameters: { [key in string]: string[] }, documentVersion: string | null, options?: InvokeOptions) => __TAURI_INVOKE<string>("ssm_start_automation", { region, documentName, parameters, documentVersion }, options),
+	ssmDescribeActivations: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmActivation_Serialize[]>("ssm_describe_activations", { region }, options),
+	/**  `expiration_date` is RFC 3339 text. */
+	ssmCreateActivation: (region: string, description: string | null, defaultInstanceName: string | null, iamRole: string, registrationLimit: number | null, expirationDate: string | null, options?: InvokeOptions) => __TAURI_INVOKE<SsmNewActivation>("ssm_create_activation", { region, description, defaultInstanceName, iamRole, registrationLimit, expirationDate }, options),
+	ssmDeleteActivation: (region: string, id: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_delete_activation", { region, id }, options),
+	ssmListResourceDataSyncs: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmDataSync_Serialize[]>("ssm_list_resource_data_syncs", { region }, options),
+	/**  Creates a `SyncToDestination` sync into an S3 bucket; `sync_format` defaults to `JsonSerDe`. */
+	ssmCreateResourceDataSync: (region: string, name: string, bucketName: string, prefix: string | null, bucketRegion: string, syncFormat: string | null, options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_create_resource_data_sync", { region, name, bucketName, prefix, bucketRegion, syncFormat }, options),
+	ssmDeleteResourceDataSync: (region: string, name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_delete_resource_data_sync", { region, name }, options),
+	ssmGetServiceSetting: (region: string, settingId: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmServiceSetting_Serialize>("ssm_get_service_setting", { region, settingId }, options),
+	ssmUpdateServiceSetting: (region: string, settingId: string, settingValue: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_update_service_setting", { region, settingId, settingValue }, options),
+	/**  Creates a patch baseline and returns its id. `operating_system` is `WINDOWS`, `AMAZON_LINUX_2` and so on. */
+	ssmCreatePatchBaseline: (region: string, name: string, operatingSystem: string, description: string | null, approvedPatches: string[], options?: InvokeOptions) => __TAURI_INVOKE<string>("ssm_create_patch_baseline", { region, name, operatingSystem, description, approvedPatches }, options),
+	/**  Returns the id of the default patch baseline of an operating system (`WINDOWS` when empty on AWS). */
+	ssmGetDefaultPatchBaseline: (region: string, operatingSystem: string | null, options?: InvokeOptions) => __TAURI_INVOKE<string>("ssm_get_default_patch_baseline", { region, operatingSystem }, options),
+	ssmListCommands: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmCommand_Serialize[]>("ssm_list_commands", { region }, options),
+	/**  Sends a command to instances and returns the command id. */
+	ssmSendCommand: (region: string, documentName: string, instanceIds: string[], parameters: { [key in string]: string[] }, comment: string | null, options?: InvokeOptions) => __TAURI_INVOKE<string>("ssm_send_command", { region, documentName, instanceIds, parameters, comment }, options),
+	ssmListAssociations: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmAssociation_Serialize[]>("ssm_list_associations", { region }, options),
+	/**  Creates an association and returns its id. */
+	ssmCreateAssociation: (region: string, name: string, targets: SsmTarget[], scheduleExpression: string | null, associationName: string | null, options?: InvokeOptions) => __TAURI_INVOKE<string>("ssm_create_association", { region, name, targets, scheduleExpression, associationName }, options),
+	ssmDeleteAssociation: (region: string, associationId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_delete_association", { region, associationId }, options),
+	ssmDescribeInstanceInformation: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmManagedInstance_Serialize[]>("ssm_describe_instance_information", { region }, options),
+	ssmGetInventory: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmInventoryEntity_Serialize[]>("ssm_get_inventory", { region }, options),
 };
 
 /* Types */
@@ -653,6 +830,174 @@ export type EventSourceMapping_Serialize = {
 	last_modified: string | null,
 };
 
+export type EventsArchive = EventsArchive_Serialize | EventsArchive_Deserialize;
+
+export type EventsArchive_Deserialize = {
+	name: string,
+	event_source_arn: string,
+	state: string,
+	/**  Absent when events are kept forever. */
+	retention_days?: number | null,
+	size_bytes: number | null,
+	event_count: number | null,
+	created?: string | null,
+};
+
+export type EventsArchive_Serialize = {
+	name: string,
+	event_source_arn: string,
+	state: string,
+	/**  Absent when events are kept forever. */
+	retention_days: number | null,
+	size_bytes: number | null,
+	event_count: number | null,
+	created: string | null,
+};
+
+export type EventsBus = EventsBus_Serialize | EventsBus_Deserialize;
+
+export type EventsBus_Deserialize = {
+	name: string,
+	arn: string,
+	description?: string | null,
+	created?: string | null,
+	last_modified?: string | null,
+};
+
+export type EventsBus_Serialize = {
+	name: string,
+	arn: string,
+	description: string | null,
+	created: string | null,
+	last_modified: string | null,
+};
+
+export type EventsEntry = EventsEntry_Serialize | EventsEntry_Deserialize;
+
+export type EventsEntry_Deserialize = {
+	/**  Absent or empty for the default bus. */
+	bus?: string | null,
+	source: string,
+	detail_type: string,
+	/**  The event detail as JSON text. */
+	detail: string,
+	resources: string[],
+};
+
+export type EventsEntry_Serialize = {
+	/**  Absent or empty for the default bus. */
+	bus: string | null,
+	source: string,
+	detail_type: string,
+	/**  The event detail as JSON text. */
+	detail: string,
+	resources: string[],
+};
+
+export type EventsInputTransformer = {
+	paths_map: { [key in string]: string },
+	template: string,
+};
+
+export type EventsPutResult = EventsPutResult_Serialize | EventsPutResult_Deserialize;
+
+export type EventsPutResult_Deserialize = {
+	event_id?: string | null,
+	error_code?: string | null,
+	error_message?: string | null,
+};
+
+export type EventsPutResult_Serialize = {
+	event_id: string | null,
+	error_code: string | null,
+	error_message: string | null,
+};
+
+export type EventsPutRuleInput = EventsPutRuleInput_Serialize | EventsPutRuleInput_Deserialize;
+
+export type EventsPutRuleInput_Deserialize = {
+	name: string,
+	/**  Empty for the default bus. */
+	bus: string,
+	description?: string | null,
+	event_pattern?: string | null,
+	schedule_expression?: string | null,
+	enabled: boolean,
+	role_arn?: string | null,
+	tags: Tag[],
+};
+
+export type EventsPutRuleInput_Serialize = {
+	name: string,
+	/**  Empty for the default bus. */
+	bus: string,
+	description: string | null,
+	event_pattern: string | null,
+	schedule_expression: string | null,
+	enabled: boolean,
+	role_arn: string | null,
+	tags: Tag[],
+};
+
+export type EventsRule = EventsRule_Serialize | EventsRule_Deserialize;
+
+export type EventsRule_Deserialize = {
+	name: string,
+	arn: string,
+	/**  `ENABLED` or `DISABLED`. */
+	state: string,
+	description?: string | null,
+	schedule_expression?: string | null,
+	event_pattern?: string | null,
+	event_bus_name: string,
+	role_arn?: string | null,
+	managed_by?: string | null,
+};
+
+export type EventsRule_Serialize = {
+	name: string,
+	arn: string,
+	/**  `ENABLED` or `DISABLED`. */
+	state: string,
+	description: string | null,
+	schedule_expression: string | null,
+	event_pattern: string | null,
+	event_bus_name: string,
+	role_arn: string | null,
+	managed_by: string | null,
+};
+
+/**  A rule target, as listed and as put. `input`, `input_path` and `input_transformer` are mutually exclusive in the API. */
+export type EventsTarget = EventsTarget_Serialize | EventsTarget_Deserialize;
+
+/**  A rule target, as listed and as put. `input`, `input_path` and `input_transformer` are mutually exclusive in the API. */
+export type EventsTarget_Deserialize = {
+	id: string,
+	arn: string,
+	role_arn?: string | null,
+	/**  A constant JSON text sent instead of the event. */
+	input?: string | null,
+	input_path?: string | null,
+	input_transformer?: EventsInputTransformer | null,
+	dead_letter_arn?: string | null,
+	/**  Message group of an SQS FIFO target. */
+	sqs_message_group_id?: string | null,
+};
+
+/**  A rule target, as listed and as put. `input`, `input_path` and `input_transformer` are mutually exclusive in the API. */
+export type EventsTarget_Serialize = {
+	id: string,
+	arn: string,
+	role_arn: string | null,
+	/**  A constant JSON text sent instead of the event. */
+	input: string | null,
+	input_path: string | null,
+	input_transformer: EventsInputTransformer | null,
+	dead_letter_arn: string | null,
+	/**  Message group of an SQS FIFO target. */
+	sqs_message_group_id: string | null,
+};
+
 export type FunctionUrl = {
 	url: string,
 	auth_type: string,
@@ -828,6 +1173,125 @@ export type KeyAttribute = {
 	kind: string,
 };
 
+export type KmsAlias = KmsAlias_Serialize | KmsAlias_Deserialize;
+
+export type KmsAlias_Deserialize = {
+	alias_name: string,
+	alias_arn: string,
+	target_key_id?: string | null,
+};
+
+export type KmsAlias_Serialize = {
+	alias_name: string,
+	alias_arn: string,
+	target_key_id: string | null,
+};
+
+export type KmsCreateKeyInput = KmsCreateKeyInput_Serialize | KmsCreateKeyInput_Deserialize;
+
+export type KmsCreateKeyInput_Deserialize = {
+	description: string,
+	/**  `ENCRYPT_DECRYPT`, `SIGN_VERIFY`, `GENERATE_VERIFY_MAC` or `KEY_AGREEMENT`; empty keeps the default. */
+	key_usage: string,
+	/**  `SYMMETRIC_DEFAULT`, `RSA_2048`, `ECC_NIST_P256`, `HMAC_256` and the other key specs; empty keeps the default. */
+	key_spec: string,
+	multi_region: boolean,
+	/**  Key policy JSON; `None` lets KMS apply the default policy. */
+	policy?: string | null,
+	tags: Tag[],
+};
+
+export type KmsCreateKeyInput_Serialize = {
+	description: string,
+	/**  `ENCRYPT_DECRYPT`, `SIGN_VERIFY`, `GENERATE_VERIFY_MAC` or `KEY_AGREEMENT`; empty keeps the default. */
+	key_usage: string,
+	/**  `SYMMETRIC_DEFAULT`, `RSA_2048`, `ECC_NIST_P256`, `HMAC_256` and the other key specs; empty keeps the default. */
+	key_spec: string,
+	multi_region: boolean,
+	/**  Key policy JSON; `None` lets KMS apply the default policy. */
+	policy: string | null,
+	tags: Tag[],
+};
+
+export type KmsGrant = KmsGrant_Serialize | KmsGrant_Deserialize;
+
+export type KmsGrant_Deserialize = {
+	grant_id: string,
+	name?: string | null,
+	grantee_principal: string,
+	retiring_principal?: string | null,
+	/**  Operation names such as `Decrypt` and `GenerateDataKey`. */
+	operations: string[],
+	creation_date?: string | null,
+	issuing_account: string,
+};
+
+export type KmsGrant_Serialize = {
+	grant_id: string,
+	name: string | null,
+	grantee_principal: string,
+	retiring_principal: string | null,
+	/**  Operation names such as `Decrypt` and `GenerateDataKey`. */
+	operations: string[],
+	creation_date: string | null,
+	issuing_account: string,
+};
+
+/**  One key as the keys table and the details page show it. */
+export type KmsKey = KmsKey_Serialize | KmsKey_Deserialize;
+
+/**  One key as the keys table and the details page show it. */
+export type KmsKey_Deserialize = {
+	key_id: string,
+	arn: string,
+	description: string,
+	/**  `Enabled`, `Disabled`, `PendingDeletion` and the other KMS key states. */
+	key_state: string,
+	enabled: boolean,
+	key_usage: string,
+	key_spec: string,
+	/**  `AWS` or `CUSTOMER`. */
+	key_manager: string,
+	origin: string,
+	creation_date?: string | null,
+	/**  Set while the key is pending deletion. */
+	deletion_date?: string | null,
+	multi_region: boolean,
+};
+
+/**  One key as the keys table and the details page show it. */
+export type KmsKey_Serialize = {
+	key_id: string,
+	arn: string,
+	description: string,
+	/**  `Enabled`, `Disabled`, `PendingDeletion` and the other KMS key states. */
+	key_state: string,
+	enabled: boolean,
+	key_usage: string,
+	key_spec: string,
+	/**  `AWS` or `CUSTOMER`. */
+	key_manager: string,
+	origin: string,
+	creation_date: string | null,
+	/**  Set while the key is pending deletion. */
+	deletion_date: string | null,
+	multi_region: boolean,
+};
+
+export type KmsRotation = KmsRotation_Serialize | KmsRotation_Deserialize;
+
+export type KmsRotation_Deserialize = {
+	enabled: boolean,
+	period_in_days?: number | null,
+	next_rotation_date?: string | null,
+};
+
+export type KmsRotation_Serialize = {
+	enabled: boolean,
+	period_in_days: number | null,
+	next_rotation_date: string | null,
+};
+
 export type LambdaAccount = {
 	function_count: number | null,
 	total_code_size: number | null,
@@ -942,6 +1406,263 @@ export type LogLine = {
 	level: string,
 	message: string,
 	raw: string,
+};
+
+export type LogsEvent = LogsEvent_Serialize | LogsEvent_Deserialize;
+
+export type LogsEvent_Deserialize = {
+	timestamp_ms: number | null,
+	timestamp: string,
+	ingestion_time?: string | null,
+	message: string,
+};
+
+export type LogsEvent_Serialize = {
+	timestamp_ms: number | null,
+	timestamp: string,
+	ingestion_time: string | null,
+	message: string,
+};
+
+export type LogsEventsPage = LogsEventsPage_Serialize | LogsEventsPage_Deserialize;
+
+export type LogsEventsPage_Deserialize = {
+	events: LogsEvent_Deserialize[],
+	/**  Token for the page after this one. The API returns the same token again at the end of the stream. */
+	next_forward_token?: string | null,
+	/**  Token for the page before this one. */
+	next_backward_token?: string | null,
+};
+
+export type LogsEventsPage_Serialize = {
+	events: LogsEvent_Serialize[],
+	/**  Token for the page after this one. The API returns the same token again at the end of the stream. */
+	next_forward_token: string | null,
+	/**  Token for the page before this one. */
+	next_backward_token: string | null,
+};
+
+export type LogsFilterInput = LogsFilterInput_Serialize | LogsFilterInput_Deserialize;
+
+export type LogsFilterInput_Deserialize = {
+	group: string,
+	/**  Restricts the search to these streams; empty searches every stream. */
+	streams: string[],
+	filter_pattern?: string | null,
+	/**  Epoch milliseconds. */
+	start_ms?: number | null,
+	/**  Epoch milliseconds. */
+	end_ms?: number | null,
+	next_token?: string | null,
+	limit?: number | null,
+};
+
+export type LogsFilterInput_Serialize = {
+	group: string,
+	/**  Restricts the search to these streams; empty searches every stream. */
+	streams: string[],
+	filter_pattern: string | null,
+	/**  Epoch milliseconds. */
+	start_ms: number | null,
+	/**  Epoch milliseconds. */
+	end_ms: number | null,
+	next_token: string | null,
+	limit: number | null,
+};
+
+export type LogsFilteredEvent = {
+	stream_name: string,
+	event_id: string,
+	timestamp_ms: number | null,
+	timestamp: string,
+	message: string,
+};
+
+export type LogsFilteredPage = LogsFilteredPage_Serialize | LogsFilteredPage_Deserialize;
+
+export type LogsFilteredPage_Deserialize = {
+	events: LogsFilteredEvent[],
+	next_token?: string | null,
+};
+
+export type LogsFilteredPage_Serialize = {
+	events: LogsFilteredEvent[],
+	next_token: string | null,
+};
+
+export type LogsGetEventsInput = LogsGetEventsInput_Serialize | LogsGetEventsInput_Deserialize;
+
+export type LogsGetEventsInput_Deserialize = {
+	group: string,
+	stream: string,
+	/**  Epoch milliseconds. */
+	start_ms?: number | null,
+	/**  Epoch milliseconds. */
+	end_ms?: number | null,
+	start_from_head: boolean,
+	next_token?: string | null,
+	limit?: number | null,
+};
+
+export type LogsGetEventsInput_Serialize = {
+	group: string,
+	stream: string,
+	/**  Epoch milliseconds. */
+	start_ms: number | null,
+	/**  Epoch milliseconds. */
+	end_ms: number | null,
+	start_from_head: boolean,
+	next_token: string | null,
+	limit: number | null,
+};
+
+export type LogsGroup = LogsGroup_Serialize | LogsGroup_Deserialize;
+
+export type LogsGroup_Deserialize = {
+	name: string,
+	/**  The ARN without the trailing `:*`, the form the tag commands take. */
+	arn: string,
+	retention_days?: number | null,
+	stored_bytes: number | null,
+	created?: string | null,
+	kms_key_id?: string | null,
+	log_group_class?: string | null,
+	metric_filter_count: number,
+	deletion_protection: boolean,
+};
+
+export type LogsGroup_Serialize = {
+	name: string,
+	/**  The ARN without the trailing `:*`, the form the tag commands take. */
+	arn: string,
+	retention_days: number | null,
+	stored_bytes: number | null,
+	created: string | null,
+	kms_key_id: string | null,
+	log_group_class: string | null,
+	metric_filter_count: number,
+	deletion_protection: boolean,
+};
+
+export type LogsMetricFilter = LogsMetricFilter_Serialize | LogsMetricFilter_Deserialize;
+
+export type LogsMetricFilter_Deserialize = {
+	name: string,
+	pattern: string,
+	/**  The first metric transformation; empty text when the filter has none. */
+	metric_name: string,
+	metric_namespace: string,
+	metric_value: string,
+	default_value?: number | null,
+	/**  How many transformations the filter has; only the first one is flattened into the fields above. */
+	transformation_count: number,
+	created?: string | null,
+};
+
+export type LogsMetricFilter_Serialize = {
+	name: string,
+	pattern: string,
+	/**  The first metric transformation; empty text when the filter has none. */
+	metric_name: string,
+	metric_namespace: string,
+	metric_value: string,
+	default_value: number | null,
+	/**  How many transformations the filter has; only the first one is flattened into the fields above. */
+	transformation_count: number,
+	created: string | null,
+};
+
+export type LogsNewEvent = {
+	/**  Epoch milliseconds. */
+	timestamp_ms: number | null,
+	message: string,
+};
+
+export type LogsQueryDefinition = {
+	id: string,
+	name: string,
+	query_string: string,
+	log_groups: string[],
+	/**  Epoch milliseconds. */
+	last_modified: number | null,
+};
+
+export type LogsQueryResults = {
+	/**  `Scheduled`, `Running`, `Complete`, `Failed`, `Cancelled`, `Timeout` or `Unknown`; the caller polls until it is not `Scheduled` or `Running`. */
+	status: string,
+	rows: LogsResultField[][],
+	records_matched: number | null,
+	records_scanned: number | null,
+	bytes_scanned: number | null,
+};
+
+export type LogsResultField = {
+	field: string,
+	value: string,
+};
+
+export type LogsStartQueryInput = LogsStartQueryInput_Serialize | LogsStartQueryInput_Deserialize;
+
+export type LogsStartQueryInput_Deserialize = {
+	groups: string[],
+	query: string,
+	/**  Epoch seconds. */
+	start_secs: number | null,
+	/**  Epoch seconds. */
+	end_secs: number | null,
+	limit?: number | null,
+};
+
+export type LogsStartQueryInput_Serialize = {
+	groups: string[],
+	query: string,
+	/**  Epoch seconds. */
+	start_secs: number | null,
+	/**  Epoch seconds. */
+	end_secs: number | null,
+	limit: number | null,
+};
+
+export type LogsStream = LogsStream_Serialize | LogsStream_Deserialize;
+
+export type LogsStream_Deserialize = {
+	name: string,
+	arn: string,
+	created?: string | null,
+	first_event?: string | null,
+	last_event?: string | null,
+	last_ingestion?: string | null,
+	stored_bytes: number | null,
+};
+
+export type LogsStream_Serialize = {
+	name: string,
+	arn: string,
+	created: string | null,
+	first_event: string | null,
+	last_event: string | null,
+	last_ingestion: string | null,
+	stored_bytes: number | null,
+};
+
+export type LogsSubscriptionFilter = LogsSubscriptionFilter_Serialize | LogsSubscriptionFilter_Deserialize;
+
+export type LogsSubscriptionFilter_Deserialize = {
+	name: string,
+	pattern: string,
+	destination_arn: string,
+	role_arn?: string | null,
+	distribution?: string | null,
+	created?: string | null,
+};
+
+export type LogsSubscriptionFilter_Serialize = {
+	name: string,
+	pattern: string,
+	destination_arn: string,
+	role_arn: string | null,
+	distribution: string | null,
+	created: string | null,
 };
 
 /**  A message attribute: `String`, `Number` or `Binary` (base64 text), as the console's form has them. */
@@ -1223,6 +1944,149 @@ export type Settings_Serialize = {
 
 export type Shell = "powershell" | "cmd";
 
+/**  Input of `sm_create_secret`. Carries the secret value, so it does not derive `Debug`. */
+export type SmCreateInput = SmCreateInput_Serialize | SmCreateInput_Deserialize;
+
+/**  Input of `sm_create_secret`. Carries the secret value, so it does not derive `Debug`. */
+export type SmCreateInput_Deserialize = {
+	name: string,
+	description?: string | null,
+	kms_key_id?: string | null,
+	secret_string?: string | null,
+	secret_binary_base64?: string | null,
+	tags: Tag[],
+};
+
+/**  Input of `sm_create_secret`. Carries the secret value, so it does not derive `Debug`. */
+export type SmCreateInput_Serialize = {
+	name: string,
+	description: string | null,
+	kms_key_id: string | null,
+	secret_string: string | null,
+	secret_binary_base64: string | null,
+	tags: Tag[],
+};
+
+export type SmReplication = SmReplication_Serialize | SmReplication_Deserialize;
+
+export type SmReplication_Deserialize = {
+	region: string,
+	status?: string | null,
+	status_message?: string | null,
+	kms_key_id?: string | null,
+	last_accessed?: string | null,
+};
+
+export type SmReplication_Serialize = {
+	region: string,
+	status: string | null,
+	status_message: string | null,
+	kms_key_id: string | null,
+	last_accessed: string | null,
+};
+
+export type SmSecretDetails = SmSecretDetails_Serialize | SmSecretDetails_Deserialize;
+
+export type SmSecretDetails_Deserialize = {
+	summary: SmSecretSummary_Deserialize,
+	rotation_lambda_arn?: string | null,
+	automatically_after_days?: number | null,
+	last_rotated?: string | null,
+	next_rotation?: string | null,
+	primary_region?: string | null,
+	owning_service?: string | null,
+	version_ids_to_stages: SmVersionStages[],
+	replication_status: SmReplication_Deserialize[],
+};
+
+export type SmSecretDetails_Serialize = {
+	summary: SmSecretSummary_Serialize,
+	rotation_lambda_arn: string | null,
+	automatically_after_days: number | null,
+	last_rotated: string | null,
+	next_rotation: string | null,
+	primary_region: string | null,
+	owning_service: string | null,
+	version_ids_to_stages: SmVersionStages[],
+	replication_status: SmReplication_Serialize[],
+};
+
+export type SmSecretSummary = SmSecretSummary_Serialize | SmSecretSummary_Deserialize;
+
+export type SmSecretSummary_Deserialize = {
+	name: string,
+	arn: string,
+	description?: string | null,
+	kms_key_id?: string | null,
+	rotation_enabled: boolean,
+	last_changed?: string | null,
+	last_accessed?: string | null,
+	created?: string | null,
+	/**  Set while the secret is scheduled for deletion. */
+	deleted?: string | null,
+	tags: Tag[],
+};
+
+export type SmSecretSummary_Serialize = {
+	name: string,
+	arn: string,
+	description: string | null,
+	kms_key_id: string | null,
+	rotation_enabled: boolean,
+	last_changed: string | null,
+	last_accessed: string | null,
+	created: string | null,
+	/**  Set while the secret is scheduled for deletion. */
+	deleted: string | null,
+	tags: Tag[],
+};
+
+/**  A secret version with its value. Sensitive: no `Debug`. */
+export type SmSecretValue = SmSecretValue_Serialize | SmSecretValue_Deserialize;
+
+/**  A secret version with its value. Sensitive: no `Debug`. */
+export type SmSecretValue_Deserialize = {
+	name: string,
+	arn: string,
+	version_id?: string | null,
+	version_stages: string[],
+	created?: string | null,
+	secret_string?: string | null,
+	secret_binary_base64?: string | null,
+};
+
+/**  A secret version with its value. Sensitive: no `Debug`. */
+export type SmSecretValue_Serialize = {
+	name: string,
+	arn: string,
+	version_id: string | null,
+	version_stages: string[],
+	created: string | null,
+	secret_string: string | null,
+	secret_binary_base64: string | null,
+};
+
+export type SmSecretVersion = SmSecretVersion_Serialize | SmSecretVersion_Deserialize;
+
+export type SmSecretVersion_Deserialize = {
+	version_id: string,
+	stages: string[],
+	created?: string | null,
+	last_accessed?: string | null,
+};
+
+export type SmSecretVersion_Serialize = {
+	version_id: string,
+	stages: string[],
+	created: string | null,
+	last_accessed: string | null,
+};
+
+export type SmVersionStages = {
+	version_id: string,
+	stages: string[],
+};
+
 export type SnsSubscription = {
 	arn: string,
 	topic_arn: string,
@@ -1335,6 +2199,457 @@ export type SqsQueue_Serialize = {
 	/**  `SSE-SQS`, `SSE-KMS`, or none. */
 	encryption: string | null,
 	content_based_deduplication: boolean,
+};
+
+export type SsmActivation = SsmActivation_Serialize | SsmActivation_Deserialize;
+
+export type SsmActivation_Deserialize = {
+	id: string,
+	description?: string | null,
+	default_instance_name?: string | null,
+	iam_role?: string | null,
+	registration_limit: number,
+	registrations_count: number,
+	expiration_date?: string | null,
+	expired: boolean,
+	created?: string | null,
+};
+
+export type SsmActivation_Serialize = {
+	id: string,
+	description: string | null,
+	default_instance_name: string | null,
+	iam_role: string | null,
+	registration_limit: number,
+	registrations_count: number,
+	expiration_date: string | null,
+	expired: boolean,
+	created: string | null,
+};
+
+export type SsmAssociation = SsmAssociation_Serialize | SsmAssociation_Deserialize;
+
+export type SsmAssociation_Deserialize = {
+	association_id?: string | null,
+	name?: string | null,
+	association_name?: string | null,
+	schedule?: string | null,
+	/**  Each target as `key=value1,value2`. */
+	targets: string[],
+	last_execution_date?: string | null,
+	overview_status?: string | null,
+};
+
+export type SsmAssociation_Serialize = {
+	association_id: string | null,
+	name: string | null,
+	association_name: string | null,
+	schedule: string | null,
+	/**  Each target as `key=value1,value2`. */
+	targets: string[],
+	last_execution_date: string | null,
+	overview_status: string | null,
+};
+
+export type SsmAutomationExecution = SsmAutomationExecution_Serialize | SsmAutomationExecution_Deserialize;
+
+export type SsmAutomationExecution_Deserialize = {
+	id: string,
+	document_name: string,
+	document_version?: string | null,
+	status: string,
+	mode?: string | null,
+	executed_by?: string | null,
+	start_time?: string | null,
+	end_time?: string | null,
+	failure_message?: string | null,
+	/**  Filled only when one execution is asked for by id: the list API does not return parameters. */
+	parameters: { [key in string]: string[] },
+	outputs: { [key in string]: string[] },
+};
+
+export type SsmAutomationExecution_Serialize = {
+	id: string,
+	document_name: string,
+	document_version: string | null,
+	status: string,
+	mode: string | null,
+	executed_by: string | null,
+	start_time: string | null,
+	end_time: string | null,
+	failure_message: string | null,
+	/**  Filled only when one execution is asked for by id: the list API does not return parameters. */
+	parameters: { [key in string]: string[] },
+	outputs: { [key in string]: string[] },
+};
+
+export type SsmCommand = SsmCommand_Serialize | SsmCommand_Deserialize;
+
+export type SsmCommand_Deserialize = {
+	command_id: string,
+	document_name?: string | null,
+	status: string,
+	requested?: string | null,
+	comment?: string | null,
+	target_count: number,
+	completed_count: number,
+	error_count: number,
+};
+
+export type SsmCommand_Serialize = {
+	command_id: string,
+	document_name: string | null,
+	status: string,
+	requested: string | null,
+	comment: string | null,
+	target_count: number,
+	completed_count: number,
+	error_count: number,
+};
+
+export type SsmCreateOpsItemInput = SsmCreateOpsItemInput_Serialize | SsmCreateOpsItemInput_Deserialize;
+
+export type SsmCreateOpsItemInput_Deserialize = {
+	title: string,
+	description: string,
+	source: string,
+	priority?: number | null,
+	category?: string | null,
+	severity?: string | null,
+};
+
+export type SsmCreateOpsItemInput_Serialize = {
+	title: string,
+	description: string,
+	source: string,
+	priority: number | null,
+	category: string | null,
+	severity: string | null,
+};
+
+export type SsmDataSync = SsmDataSync_Serialize | SsmDataSync_Deserialize;
+
+export type SsmDataSync_Deserialize = {
+	name: string,
+	sync_type?: string | null,
+	s3_bucket?: string | null,
+	s3_prefix?: string | null,
+	s3_region?: string | null,
+	last_status?: string | null,
+	last_sync_time?: string | null,
+	created?: string | null,
+};
+
+export type SsmDataSync_Serialize = {
+	name: string,
+	sync_type: string | null,
+	s3_bucket: string | null,
+	s3_prefix: string | null,
+	s3_region: string | null,
+	last_status: string | null,
+	last_sync_time: string | null,
+	created: string | null,
+};
+
+export type SsmDocumentContent = {
+	name: string,
+	content: string,
+	document_type: string,
+	document_format: string,
+	document_version: string,
+};
+
+export type SsmDocumentInfo = SsmDocumentInfo_Serialize | SsmDocumentInfo_Deserialize;
+
+export type SsmDocumentInfo_Deserialize = {
+	name: string,
+	document_type: string,
+	document_format: string,
+	status: string,
+	owner?: string | null,
+	created?: string | null,
+	document_version: string,
+	default_version?: string | null,
+	latest_version?: string | null,
+	description?: string | null,
+	platform_types: string[],
+	target_type?: string | null,
+	schema_version?: string | null,
+	tags: Tag[],
+};
+
+export type SsmDocumentInfo_Serialize = {
+	name: string,
+	document_type: string,
+	document_format: string,
+	status: string,
+	owner: string | null,
+	created: string | null,
+	document_version: string,
+	default_version: string | null,
+	latest_version: string | null,
+	description: string | null,
+	platform_types: string[],
+	target_type: string | null,
+	schema_version: string | null,
+	tags: Tag[],
+};
+
+export type SsmInventoryEntity = SsmInventoryEntity_Serialize | SsmInventoryEntity_Deserialize;
+
+export type SsmInventoryEntity_Deserialize = {
+	id: string,
+	/**  The earliest capture time among the entity's inventory types, as the API reports it. */
+	capture_time?: string | null,
+	/**  The inventory type names, for example `AWS:InstanceInformation`. */
+	content_types: string[],
+};
+
+export type SsmInventoryEntity_Serialize = {
+	id: string,
+	/**  The earliest capture time among the entity's inventory types, as the API reports it. */
+	capture_time: string | null,
+	/**  The inventory type names, for example `AWS:InstanceInformation`. */
+	content_types: string[],
+};
+
+export type SsmManagedInstance = SsmManagedInstance_Serialize | SsmManagedInstance_Deserialize;
+
+export type SsmManagedInstance_Deserialize = {
+	instance_id: string,
+	ping_status?: string | null,
+	platform_name?: string | null,
+	platform_type?: string | null,
+	platform_version?: string | null,
+	agent_version?: string | null,
+	ip_address?: string | null,
+	computer_name?: string | null,
+	last_ping?: string | null,
+};
+
+export type SsmManagedInstance_Serialize = {
+	instance_id: string,
+	ping_status: string | null,
+	platform_name: string | null,
+	platform_type: string | null,
+	platform_version: string | null,
+	agent_version: string | null,
+	ip_address: string | null,
+	computer_name: string | null,
+	last_ping: string | null,
+};
+
+/**  The activation code registers machines and AWS shows it once: no `Debug`. */
+export type SsmNewActivation = {
+	activation_id: string,
+	activation_code: string,
+};
+
+export type SsmOpsItem = SsmOpsItem_Serialize | SsmOpsItem_Deserialize;
+
+export type SsmOpsItemSummary = SsmOpsItemSummary_Serialize | SsmOpsItemSummary_Deserialize;
+
+export type SsmOpsItemSummary_Deserialize = {
+	id: string,
+	title?: string | null,
+	status?: string | null,
+	priority?: number | null,
+	source?: string | null,
+	category?: string | null,
+	severity?: string | null,
+	created?: string | null,
+	last_modified?: string | null,
+};
+
+export type SsmOpsItemSummary_Serialize = {
+	id: string,
+	title: string | null,
+	status: string | null,
+	priority: number | null,
+	source: string | null,
+	category: string | null,
+	severity: string | null,
+	created: string | null,
+	last_modified: string | null,
+};
+
+export type SsmOpsItem_Deserialize = {
+	id: string,
+	title?: string | null,
+	status?: string | null,
+	priority?: number | null,
+	source?: string | null,
+	category?: string | null,
+	severity?: string | null,
+	created?: string | null,
+	last_modified?: string | null,
+	description?: string | null,
+	created_by?: string | null,
+	operational_data: { [key in string]: string },
+};
+
+export type SsmOpsItem_Serialize = {
+	id: string,
+	title: string | null,
+	status: string | null,
+	priority: number | null,
+	source: string | null,
+	category: string | null,
+	severity: string | null,
+	created: string | null,
+	last_modified: string | null,
+	description: string | null,
+	created_by: string | null,
+	operational_data: { [key in string]: string },
+};
+
+export type SsmParameterMeta = SsmParameterMeta_Serialize | SsmParameterMeta_Deserialize;
+
+export type SsmParameterMeta_Deserialize = {
+	name: string,
+	param_type: string,
+	tier: string,
+	description?: string | null,
+	last_modified?: string | null,
+	last_modified_user?: string | null,
+	version: number | null,
+	data_type?: string | null,
+	key_id?: string | null,
+	arn?: string | null,
+};
+
+export type SsmParameterMeta_Serialize = {
+	name: string,
+	param_type: string,
+	tier: string,
+	description: string | null,
+	last_modified: string | null,
+	last_modified_user: string | null,
+	version: number | null,
+	data_type: string | null,
+	key_id: string | null,
+	arn: string | null,
+};
+
+/**  A parameter with its value. The value can be a decrypted secret: no `Debug`. */
+export type SsmParameterValue = SsmParameterValue_Serialize | SsmParameterValue_Deserialize;
+
+/**  A parameter with its value. The value can be a decrypted secret: no `Debug`. */
+export type SsmParameterValue_Deserialize = {
+	name: string,
+	param_type: string,
+	/**  The plain value, or the ciphertext of a `SecureString` read without decryption. */
+	value: string,
+	version: number | null,
+	last_modified?: string | null,
+	arn?: string | null,
+	data_type?: string | null,
+};
+
+/**  A parameter with its value. The value can be a decrypted secret: no `Debug`. */
+export type SsmParameterValue_Serialize = {
+	name: string,
+	param_type: string,
+	/**  The plain value, or the ciphertext of a `SecureString` read without decryption. */
+	value: string,
+	version: number | null,
+	last_modified: string | null,
+	arn: string | null,
+	data_type: string | null,
+};
+
+/**  One stored version of a parameter. The value can be a decrypted secret: no `Debug`. */
+export type SsmParameterVersion = SsmParameterVersion_Serialize | SsmParameterVersion_Deserialize;
+
+/**  One stored version of a parameter. The value can be a decrypted secret: no `Debug`. */
+export type SsmParameterVersion_Deserialize = {
+	version: number | null,
+	value: string,
+	param_type: string,
+	last_modified?: string | null,
+	last_modified_user?: string | null,
+	description?: string | null,
+	labels: string[],
+	tier?: string | null,
+	/**  The text of each parameter policy. */
+	policies: string[],
+	key_id?: string | null,
+};
+
+/**  One stored version of a parameter. The value can be a decrypted secret: no `Debug`. */
+export type SsmParameterVersion_Serialize = {
+	version: number | null,
+	value: string,
+	param_type: string,
+	last_modified: string | null,
+	last_modified_user: string | null,
+	description: string | null,
+	labels: string[],
+	tier: string | null,
+	/**  The text of each parameter policy. */
+	policies: string[],
+	key_id: string | null,
+};
+
+/**  The value is the content to store, possibly a secret: no `Debug`. */
+export type SsmPutParameterInput = SsmPutParameterInput_Serialize | SsmPutParameterInput_Deserialize;
+
+/**  The value is the content to store, possibly a secret: no `Debug`. */
+export type SsmPutParameterInput_Deserialize = {
+	name: string,
+	description?: string | null,
+	value: string,
+	/**  `String`, `StringList` or `SecureString`. */
+	param_type: string,
+	key_id?: string | null,
+	overwrite: boolean,
+	tier?: string | null,
+	data_type?: string | null,
+	allowed_pattern?: string | null,
+	/**  Ignored when `overwrite` is true: AWS refuses tags together with an overwrite. */
+	tags: Tag[],
+};
+
+/**  The value is the content to store, possibly a secret: no `Debug`. */
+export type SsmPutParameterInput_Serialize = {
+	name: string,
+	description: string | null,
+	value: string,
+	/**  `String`, `StringList` or `SecureString`. */
+	param_type: string,
+	key_id: string | null,
+	overwrite: boolean,
+	tier: string | null,
+	data_type: string | null,
+	allowed_pattern: string | null,
+	/**  Ignored when `overwrite` is true: AWS refuses tags together with an overwrite. */
+	tags: Tag[],
+};
+
+export type SsmServiceSetting = SsmServiceSetting_Serialize | SsmServiceSetting_Deserialize;
+
+export type SsmServiceSetting_Deserialize = {
+	setting_id: string,
+	setting_value: string,
+	status: string,
+	last_modified?: string | null,
+	last_modified_user?: string | null,
+	arn?: string | null,
+};
+
+export type SsmServiceSetting_Serialize = {
+	setting_id: string,
+	setting_value: string,
+	status: string,
+	last_modified: string | null,
+	last_modified_user: string | null,
+	arn: string | null,
+};
+
+export type SsmTarget = {
+	/**  `InstanceIds`, `tag:<name>` or `resource-groups:Name`. */
+	key: string,
+	values: string[],
 };
 
 export type StatementPage = StatementPage_Serialize | StatementPage_Deserialize;

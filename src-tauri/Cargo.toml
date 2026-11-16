@@ -12,12 +12,17 @@ crate-type = ["rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+aws-sdk-cloudwatchlogs = "1.165.0"
 aws-sdk-dynamodb = "1.139.0"
+aws-sdk-eventbridge = "1.129.0"
 aws-sdk-iam = "1.136.0"
+aws-sdk-kms = "1.131.0"
 aws-sdk-lambda = "1.159.0"
 aws-sdk-s3 = "1.159.0"
+aws-sdk-secretsmanager = "1.128.0"
 aws-sdk-sns = "1.123.0"
 aws-sdk-sqs = "1.121.0"
+aws-sdk-ssm = "1.137.0"
 aws-sdk-sts = "1.126.0"
 aws-smithy-http-client = { version = "1.5.2", features = ["rustls-aws-lc"] }
 aws-smithy-types = "1.9.4"

@@ -3,11 +3,16 @@
 //! its failures as [`ApiError`] with the operation named `service:Operation`.
 
 pub mod dynamodb;
+pub mod eventbridge;
 pub mod iam;
+pub mod kms;
 pub mod lambda;
+pub mod logs;
 pub mod s3;
+pub mod secretsmanager;
 pub mod sns;
 pub mod sqs;
+pub mod ssm;
 
 use crate::aws::ApiError;
 use aws_smithy_types::date_time::Format;

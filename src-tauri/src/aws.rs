@@ -169,6 +169,31 @@ impl Clients {
         Ok(aws_sdk_lambda::Client::from_conf(conf))
     }
 
+    pub fn secretsmanager_in(&self, region: &str) -> Result<aws_sdk_secretsmanager::Client, ApiError> {
+        let conf = aws_sdk_secretsmanager::config::Builder::from(&self.regional(region)?).interceptor(self.guard.clone()).build();
+        Ok(aws_sdk_secretsmanager::Client::from_conf(conf))
+    }
+
+    pub fn ssm_in(&self, region: &str) -> Result<aws_sdk_ssm::Client, ApiError> {
+        let conf = aws_sdk_ssm::config::Builder::from(&self.regional(region)?).interceptor(self.guard.clone()).build();
+        Ok(aws_sdk_ssm::Client::from_conf(conf))
+    }
+
+    pub fn kms_in(&self, region: &str) -> Result<aws_sdk_kms::Client, ApiError> {
+        let conf = aws_sdk_kms::config::Builder::from(&self.regional(region)?).interceptor(self.guard.clone()).build();
+        Ok(aws_sdk_kms::Client::from_conf(conf))
+    }
+
+    pub fn logs_in(&self, region: &str) -> Result<aws_sdk_cloudwatchlogs::Client, ApiError> {
+        let conf = aws_sdk_cloudwatchlogs::config::Builder::from(&self.regional(region)?).interceptor(self.guard.clone()).build();
+        Ok(aws_sdk_cloudwatchlogs::Client::from_conf(conf))
+    }
+
+    pub fn eventbridge_in(&self, region: &str) -> Result<aws_sdk_eventbridge::Client, ApiError> {
+        let conf = aws_sdk_eventbridge::config::Builder::from(&self.regional(region)?).interceptor(self.guard.clone()).build();
+        Ok(aws_sdk_eventbridge::Client::from_conf(conf))
+    }
+
     /// IAM client in the session's own Region. IAM is global on AWS, so its pages take no Region
     /// and every call goes to the one Region the emulator was started with.
     pub fn iam(&self) -> aws_sdk_iam::Client {
