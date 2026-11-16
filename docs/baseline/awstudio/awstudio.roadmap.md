@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "roadmap"
 status: "active"
 updated: "2026-11-16"
-code_ref: "0b4888b"
+code_ref: "0c0182b"
 ---
 
 # awstudio - roadmap
@@ -19,7 +19,7 @@ code_ref: "0b4888b"
 | Phase 3 | Console shell and capability matrix | complete | Phase 2 |
 | Phase 4 | Services wave 1: S3, DynamoDB, SQS, SNS | complete | Phase 3 |
 | Phase 5 | Services wave 2: IAM, Lambda | complete | Phase 4 |
-| Phase 6 | Services wave 3: Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge | implemented, awaiting approval | Phase 5 |
+| Phase 6 | Services wave 3: Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge | complete | Phase 5 |
 | Phase 7 | API Console, fidelity catalog, seed scripts | planned | Phase 3 |
 | Phase 8 | Packaging | planned | Phase 6, Phase 7 |
 | Phase 9 | Embedded mode spike | deferred | Phase 8 |
@@ -230,19 +230,19 @@ Pages:
 
 Acceptance: an EventBridge rule targeting an SQS queue delivers a sent event that is visible in the SQS page.
 
-Checkpoint (pages and commands implemented, committed in `2f349df` (commands), `a1b3fcb` (pages) and `0b4888b` (README); awaiting Kai's approval to close):
+Checkpoint (pages and commands implemented, committed in `2f349df` (commands), `a1b3fcb` (pages), `0b4888b` (README) and `0c0182b` (enabled operations); closed with Kai's approval on 2026-11-16):
 
 | Acceptance | State |
 |---|---|
-| An EventBridge rule targeting an SQS queue delivers a sent event that is visible in the SQS page | verified in the dev app with the PutTargets gate lifted temporarily (ASD-Q15): the Create rule wizard created a rule with an SQS target, Send events put an event, and the queue's Send and receive page listed the message (Messages 1, 215 B); the queue policy grant the emulator needs is added by the page (ASD-D36); as committed PutTargets is disabled with its reason, so the acceptance is not reachable from the UI until ASD-Q15 is answered |
+| An EventBridge rule targeting an SQS queue delivers a sent event that is visible in the SQS page | verified in the dev app: the Create rule wizard created a rule with an SQS target, Send events put an event, and the queue's Send and receive page listed the message (Messages 1, 215 B); repeated after PutTargets was enabled (ASD-D38) with Add target on an existing rule; the queue policy grant the emulator needs is added by the page (ASD-D36) |
 
 - Pages: Secrets Manager (list, Store a new secret wizard, details with value, rotation, versions, resource permissions, tags); KMS (customer and AWS managed key lists, Create key wizard, details with key policy, rotation, aliases, grants, tags); CloudWatch Logs (log groups, create, details with streams, metric filters, subscription filters, tags, log events, Logs Insights with saved queries); EventBridge (rules, Create rule wizard, rule details, event buses, archives, Send events); Systems Manager (Parameter Store, OpsCenter, Settings, Automation, Hybrid Activations, Resource Data Sync, Documents, Patch Manager, and the view-only or partly supported Maintenance Windows, Fleet Manager, Compliance, Inventory, Session Manager, Run Command, State Manager). Routes in `awstudio.sourcecode.md`.
 - Commands: 116 (Secrets Manager 15, KMS 21, CloudWatch Logs 23, EventBridge 18, SSM 39), all Region-scoped, every error names `service:Operation`.
-- Gating: Documents, Patch Manager, Maintenance Windows, Compliance and Session Manager lists are UI-only (their list operations are red); the Parameters, Fleet Manager, Inventory, Run Command, State Manager and Settings pages load under the partly supported banner (ASD-D32); PutTargets, ListAliases, StartQuery and GetQueryResults stay disabled until the owner answers ASD-Q15, ASD-Q16 and ASD-Q17.
+- Gating: Documents, Patch Manager, Maintenance Windows, Compliance and Session Manager lists are UI-only (their list operations are red); the Parameters, Fleet Manager, Inventory, Run Command, State Manager and Settings pages load under the partly supported banner (ASD-D32); PutTargets, ListAliases, StartQuery and GetQueryResults are enabled (ASD-D38); ListQueues stays disabled outside the SQS pages, so the EventBridge target form takes the queue ARN typed (ASD-D39).
 - Evidence: `cargo test --lib` 62 passed (12 new); `cargo test --test bindings` regenerated `src/bindings.ts` once, then passed; `npx tsc --noEmit` and `npm run build` passed (main chunk 1756.73 kB). Through the app IPC against the Docker emulator: secrets (create, read, version, tags, policy, delete, restore), keys (create, alias, rotation, policy, tags, schedule and cancel deletion), log groups (streams, events, metric filters, tags, saved queries, an Insights query), EventBridge (buses, rules, targets, PutEvents, archives, tags), Parameter Store (put, history, labels, tags, delete), OpsItems, documents, Automation, activations, resource data syncs, service settings and a patch baseline. In the dev app over WebView2 remote debugging: 60 routes rendered with no load error; the secrets wizard and value Retrieve (cleared on tab change), SecureString parameter create, decrypt on click and edit, Create key wizard with alias, log group, stream and test events with filter, Insights run, rule wizard with SQS target, Send events, patch baseline, document, Automation execution and activation code dialog.
 - Defects found and fixed in this phase: the EventBridge target form sent PutTargets without the queue policy grant, so events never reached the queue (cause and fix in ASD-D36); the patch baseline form sent no approved patches and the emulator refused it (ASD-D37); the rules list put a form field inside the table header description, which React reported as invalid nesting (field moved above the table).
-- Not verified: delete and restore of a secret and of a key from the pages; the metric filter, tag, rotation, grant, OpsItem edit and settings Edit modals; the asymmetric key branch of the Create key wizard; rotation with a real Lambda function; subscription filters with a real destination; Run Command, State Manager, Fleet Manager and Inventory against a managed node; the release build window; Windows CI (push not authorized).
-- Open: ASD-Q15 (enable PutTargets), ASD-Q16 (enable ListAliases), ASD-Q17 (enable StartQuery and GetQueryResults), ASD-Q18 (enable ListQueues for the target picker).
+- Not verified: targets of types other than SQS; delete and restore of a secret and of a key from the pages; the metric filter, tag, rotation, grant, OpsItem edit and settings Edit modals; the asymmetric key branch of the Create key wizard; rotation with a real Lambda function; subscription filters with a real destination; Run Command, State Manager, Fleet Manager and Inventory against a managed node; the release build window; Windows CI (push not authorized).
+- Decisions: ASD-D38 (PutTargets, ListAliases, StartQuery and GetQueryResults are enabled although partly supported), ASD-D39 (ListQueues stays disabled outside the SQS pages).
 - Risk: Region partitioning was measured only for Secrets Manager (a secret in `us-east-1` is not listed in `eu-west-1`), not for the other four services; the rules list shows an `Events-Archive-<name>` rule the emulator creates for each archive and the pages leave managed rules read-only; creating an activation needs an existing IAM role that trusts `ssm.amazonaws.com`; rotation and subscription filters validate the Lambda function and its permission; AWS-owned Automation documents such as `AWS-RestartEC2Instance` do not exist, so Automation needs a document the user created.
 - Changed files: `src-tauri/Cargo.toml`, `Cargo.lock` (`aws-sdk-secretsmanager`, `aws-sdk-ssm`, `aws-sdk-kms`, `aws-sdk-cloudwatchlogs`, `aws-sdk-eventbridge`), `src-tauri/src/aws.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/services/` (`mod.rs`, `secretsmanager.rs`, `kms.rs`, `logs.rs`, `eventbridge.rs`, `ssm.rs`), `src/bindings.ts`, `src/services/routes.tsx`, `src/services/secretsmanager/SecretsManagerPages.tsx`, `src/services/kms/KmsPages.tsx`, `src/services/logs/LogsPages.tsx`, `src/services/eventbridge/EventBridgePages.tsx`, `src/services/ssm/` (`shell.tsx`, `SsmPages.tsx`, `ParameterStore.tsx`, `OpsCenter.tsx`, `SsmSettings.tsx`, `SsmAreas.tsx`), `README.md`.
 ## Phase 7: API Console, fidelity catalog, seed scripts
@@ -281,9 +281,9 @@ Deferred by ASD-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 | Yellow primary reads load data that may be incomplete | A partial page can miss edge cases of its list | Partly supported banner; other yellow controls disabled (ASD-D32) |
 | Lambda keeps one function namespace for every Region | A Region selector that does not scope the Lambda pages | Region column in the list, help note (ASD-D34) |
 | Lambda refuses an update while a create or update runs | HTTP 409 on deploy, publish or invoke | Backend waits for the function (ASD-D33) |
-| Partly supported operations the pages need stay disabled | A rule cannot get a target, aliases cannot be listed, Insights cannot run | Owner decides per operation (ASD-Q15, ASD-Q16, ASD-Q17, ASD-Q18) |
+| Enabled partly supported operations can fail on input the probes did not try | An error in the Flashbar | The list of enabled operations grows only after a probe (ASD-D35, ASD-D38) |
 | EventBridge and SNS deliver to SQS only with a queue policy grant | Events and messages are silently dropped | The pages add the grant (ASD-D36) |
 
 ## Next action
 
-Phase 6 (Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge) is implemented and waits for Kai to answer ASD-Q15 to ASD-Q18 and to approve closing it. Phase 7 (API Console, fidelity catalog, seed scripts) starts only when the owner asks. ASD-Q7 (native provider install source) stays open and deferred. The Docker emulator is stopped. Pushing for CI of Phase 2 to Phase 6 code is not yet authorized.
+Phase 6 is complete. Phase 7 (API Console, fidelity catalog, seed scripts) starts only when the owner asks. ASD-Q7 (native provider install source) stays open and deferred. The Docker emulator is stopped. Pushing for CI of Phase 2 to Phase 6 code is not yet authorized.

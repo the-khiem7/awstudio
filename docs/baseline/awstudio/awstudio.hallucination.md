@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "hallucination"
 status: "active"
 updated: "2026-11-16"
-code_ref: "0b4888b"
+code_ref: "0c0182b"
 ---
 
 # awstudio - decisions and open questions
@@ -23,7 +23,7 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASD-D6 | Per-machine build toolchain profiles | closed | ASD-D7, ASD-D15, ASD-D20, ASD-Q5 |
 | ASD-D7 | Target platforms: Windows with Docker first, Linux deferred | closed | ASD-D4, ASD-D6, ASD-Q3 |
 | ASD-D8 | Service scope and generic API Console | closed | ASD-D9 |
-| ASD-D9 | Capability tiers and UI gating | closed, reversed in part by ASD-D32 and ASD-D35 | ASD-D8, ASD-D10, ASD-D11, ASD-D32, ASD-D35 |
+| ASD-D9 | Capability tiers and UI gating | closed, reversed in part by ASD-D32, ASD-D35 and ASD-D38 | ASD-D8, ASD-D10, ASD-D11, ASD-D32, ASD-D35, ASD-D38 |
 | ASD-D10 | Lambda Code tab is functional | closed | ASD-D9, ASD-D11 |
 | ASD-D11 | Lesson: branch-level not_implemented read as whole-operation gaps | lesson | ASD-D9, ASD-D10 |
 | ASD-D12 | Emulator telemetry default | closed | - |
@@ -50,13 +50,11 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASD-D33 | Lesson: Lambda refuses a second update while the first is still running | lesson | ASD-D9 |
 | ASD-D34 | Lambda list shows every function with a Region column | closed | ASD-D9, ASD-D32, ASD-Q13 |
 | ASD-D35 | Create access key and Edit function configuration are enabled although partly supported | closed | ASD-D9, ASD-D32, ASD-Q14 |
-| ASD-D36 | Lesson: EventBridge delivers to an SQS target only when the queue policy grants events.amazonaws.com | lesson | ASD-D9, ASD-Q15 |
+| ASD-D36 | Lesson: EventBridge delivers to an SQS target only when the queue policy grants events.amazonaws.com | lesson | ASD-D9, ASD-D38 |
 | ASD-D37 | Lesson: CreatePatchBaseline needs approved patches or approval rules | lesson | ASD-D9 |
+| ASD-D38 | PutTargets, ListAliases, StartQuery and GetQueryResults are enabled although partly supported | closed | ASD-D9, ASD-D35, ASD-D36, ASD-Q15, ASD-Q16, ASD-Q17 |
+| ASD-D39 | ListQueues stays disabled outside the SQS pages | closed | ASD-D9, ASD-D32, ASD-D35, ASD-Q18 |
 | ASD-Q7 | Native provider install source: no DEB package URL known | open, deferred | ASD-D4, ASD-D7 |
-| ASD-Q15 | Enable PutTargets although partly supported | open | ASD-D9, ASD-D35, ASD-D36 |
-| ASD-Q16 | Enable ListAliases although partly supported | open | ASD-D9, ASD-D35 |
-| ASD-Q17 | Enable StartQuery and GetQueryResults although partly supported | open | ASD-D9, ASD-D35 |
-| ASD-Q18 | Enable ListQueues outside the SQS pages for the EventBridge queue picker | open | ASD-D9, ASD-D32, ASD-D35 |
 
 ## Closed decisions
 
@@ -425,6 +423,28 @@ Closes ASD-Q14. Reverses in part ASD-D9 (its rule that yellow operations are non
 - What disproved it: the emulator answered ValidationException "Patch Baseline attribute: Approved Patches and Approval Rule, at least one must be non empty."
 - Fix: `ssm_create_patch_baseline` takes `approved_patches` and the form requires at least one line; with one approved patch the baseline was created. [agent]
 
+### ASD-D38: PutTargets, ListAliases, StartQuery and GetQueryResults are enabled although partly supported
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+Closes ASD-Q15, ASD-Q16 and ASD-Q17. Reverses in part ASD-D9 (its rule that yellow operations are non-functional); the rest of ASD-D9, ASD-D32 and ASD-D35 stand.
+
+- Decision (Kai, 2026-11-16): `eventbridge:PutTargets` (36 of 49 conformance steps), `kms:ListAliases` (6 of 9), `cloudwatch-logs:StartQuery` (13 of 17) and `cloudwatch-logs:GetQueryResults` (2 of 3) are enabled through the list of enabled yellow operations in `src/capability/index.tsx`; every other yellow control stays disabled.
+- Why: each blocks the main flow of its page (a rule's targets, a key's aliases, a Logs Insights query) and each worked when called against the emulator: a rule got an SQS target and a matching event reached the queue, a key's alias was listed, and an Insights query over two log events returned both rows with status Complete [agent]; owner chose it [user].
+- What breaks if ignored: without PutTargets a rule gets no target from the app and the Phase 6 acceptance (a rule targeting an SQS queue delivers an event visible on the SQS page) is unreachable from the UI; without ListAliases the Aliases tab cannot list and Create alias makes names the user cannot see again; without StartQuery and GetQueryResults Logs Insights is view-only. If the list grows without a probe, a partly supported operation can fail on input the probe did not try, and the failure shows as an error in the Flashbar.
+- Rejected: keep the four disabled - leaves three working flows disabled and the acceptance unreachable [user].
+
+### ASD-D39: ListQueues stays disabled outside the SQS pages
+
+**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
+
+Closes ASD-Q18.
+
+- Decision (Kai, 2026-11-16): `sqs:ListQueues` (2 of 7 conformance steps) is not added to the list of enabled yellow operations; the EventBridge target form takes the queue ARN typed, and the SQS Queues page keeps loading the list under the partly supported banner (ASD-D32).
+- Why: the plain listing worked on the SQS page, but its failing steps (body shape, pagination) were not probed outside that page [agent]; owner accepted the recommendation [user].
+- What breaks if ignored: enabling it everywhere lets a partly supported read run on any page without a probe of how it fails there.
+- Rejected: enable ListQueues so the target form can offer a queue picker - the failing steps are unprobed outside the SQS page [user].
+
 ## Open questions
 
 ### ASD-Q7: Native provider install source: no DEB package URL known
@@ -434,40 +454,3 @@ Closes ASD-Q14. Reverses in part ASD-D9 (its rule that yellow operations are non
 - Options: document an RPM extraction (`rpm2cpio`) into a user directory, find the real DEB URL on the AWS Linux guide, or keep the setting and leave installation to the user.
 - Recommendation: keep the setting and leave installation to the user until the AWS Linux guide shows a DEB URL. [agent]
 - Deferred (Kai, 2026-11-15): not answered now; work concentrates on the Docker provider, and the native provider stays as built, reading `wsl_binary` from settings [user].
-
-
-### ASD-Q15: Enable PutTargets although partly supported
-
-**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
-
-- Question: should `eventbridge:PutTargets` (36 of 49 conformance steps) be enabled, as ASD-D35 did for two other partly supported operations?
-- Found: with PutTargets enabled temporarily, the Add target modal, the Create rule wizard and the SQS delivery acceptance worked against the emulator; as shipped the button is disabled with its reason, so a rule gets no target from the app.
-- Options: (a) enable it through the list of enabled yellow operations in `src/capability/index.tsx`, reversing ASD-D9 in part for this operation; (b) keep it disabled, so the Phase 6 acceptance (a rule targeting an SQS queue delivers an event visible on the SQS page) cannot be reached from the UI.
-- Recommendation: (a), because without it the EventBridge pages cannot attach any target and the acceptance fails; the failure modes of the untried target types stay visible as Flashbar errors. [agent]
-
-### ASD-Q16: Enable ListAliases although partly supported
-
-**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
-
-- Question: should `kms:ListAliases` (6 of 9 steps) be enabled?
-- Found: called from the backend and, with the gate lifted, from the key details page, it listed the alias created for a key; as shipped the page cannot list aliases, shows why, and keeps Create alias and a Delete alias by name form.
-- Options: (a) enable it; (b) keep it disabled.
-- Recommendation: (a), because a key whose aliases cannot be seen leaves Create alias creating names the user cannot find again. [agent]
-
-### ASD-Q17: Enable StartQuery and GetQueryResults although partly supported
-
-**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
-
-- Question: should `cloudwatch-logs:StartQuery` (13 of 17 steps) and `cloudwatch-logs:GetQueryResults` (2 of 3) be enabled?
-- Found: a Logs Insights query over a log group with two events returned both rows (status Complete) from the backend and from the page with the gate lifted; as shipped Run query is disabled with its reason.
-- Options: (a) enable both; (b) keep both disabled and Logs Insights view-only.
-- Recommendation: (a), because Insights is the only way to query logs across streams in the console and the probe returned correct rows. [agent]
-
-### ASD-Q18: Enable ListQueues outside the SQS pages for the EventBridge queue picker
-
-**Vendor:** aws-emulator@a978cc2cde36 (v1.0.382)
-
-- Question: should `sqs:ListQueues` (2 of 7 steps) be enabled everywhere, so the EventBridge target form can offer the queues of the Region in a picker?
-- Found: ListQueues only runs on the SQS Queues page (ASD-D32); in the target form its gate is off, the picker stays empty and the queue ARN is typed.
-- Options: (a) enable it through the list of enabled yellow operations; (b) keep the typed ARN.
-- Recommendation: (b) unless the owner finds the typed ARN a problem, because the plain listing worked but its failing steps (body shape, pagination) were not probed outside the SQS page. [agent]

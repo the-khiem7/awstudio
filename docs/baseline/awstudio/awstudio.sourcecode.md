@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-16"
-code_ref: "0b4888b"
+code_ref: "0c0182b"
 ---
 
 # awstudio - source code
@@ -125,13 +125,13 @@ Routes:
 
 ## Implemented in Phase 6
 
-Committed in `2f349df` (commands), `a1b3fcb` (pages) and `0b4888b` (README); verification is in the Phase 6 checkpoint of `awstudio.roadmap.md`.
+Committed in `2f349df` (commands), `a1b3fcb` (pages), `0b4888b` (README) and `0c0182b` (enabled operations); verification is in the Phase 6 checkpoint of `awstudio.roadmap.md`.
 
 | Path | Role |
 |---|---|
-| `src-tauri/src/aws.rs` | `Clients::secretsmanager_in`, `ssm_in`, `kms_in`, `logs_in`, `eventbridge_in` (a client per Region, guard attached) |
+| `src/capability/index.tsx` | `ENABLED_YELLOW` gains `eventbridge:PutTargets`, `kms:ListAliases`, `cloudwatch-logs:StartQuery` and `cloudwatch-logs:GetQueryResults` (ASD-D38) |, `ssm_in`, `kms_in`, `logs_in`, `eventbridge_in` (a client per Region, guard attached) |
 | `src-tauri/src/services/secretsmanager.rs` | 15 commands; `SmSecretValue` and `SmCreateInput` have no Debug; `sm_delete_secret` sends only the force flag when it is set |
-| `src-tauri/src/services/kms.rs` | 21 commands; `kms_list_keys` describes every key; aliases need the `alias/` prefix; `KmsKey` carries no rotation state |
+| `src-tauri/src/services/kms.rs` | 21 commands; `kms_list_keys` describes every key; aliases need the `alias/` prefix and are listed because ListAliases is enabled; `KmsKey` carries no rotation state |
 | `src-tauri/src/services/logs.rs` | 23 commands; `logs_get_events` and `logs_filter_events` return one page with the next token; group ARNs lose the trailing `:*`; times in are epoch milliseconds, query times are epoch seconds |
 | `src-tauri/src/services/eventbridge.rs` | 18 commands; an empty bus means the default bus; `events_delete_rule` removes the targets first; a failed entry in PutTargets or RemoveTargets is an error |
 | `src-tauri/src/services/ssm.rs` | 39 commands; secret-bearing types have no Debug; `ssm_describe_automation_executions` also calls GetAutomationExecution for one id and ignores its failure; `ssm_create_patch_baseline` takes approved patches (ASD-D37) |
