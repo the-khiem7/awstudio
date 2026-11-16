@@ -95,7 +95,14 @@ export function variantUnsupported(op: OpCapability, variant: string): boolean {
  * Partly supported (yellow) operations that a page's main flow needs and that the owner enabled;
  * every other yellow operation stays disabled. Each worked when called against the emulator.
  */
-const ENABLED_YELLOW: ReadonlySet<string> = new Set(["iam:CreateAccessKey", "lambda:UpdateFunctionConfiguration"]);
+const ENABLED_YELLOW: ReadonlySet<string> = new Set([
+  "iam:CreateAccessKey",
+  "lambda:UpdateFunctionConfiguration",
+  "eventbridge:PutTargets",
+  "kms:ListAliases",
+  "cloudwatch-logs:StartQuery",
+  "cloudwatch-logs:GetQueryResults",
+]);
 
 /** Pure form of {@link useCapability}, for lists that judge many operations at once. */
 export function judge(
