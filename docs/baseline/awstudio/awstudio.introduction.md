@@ -4,14 +4,14 @@ pack: "awstudio"
 document: "introduction"
 status: "active"
 updated: "2026-11-16"
-code_ref: "251af0c"
+code_ref: "0b4888b"
 ---
 
 # awstudio - introduction
 
 ## Scope
 
-`awstudio` is a Tauri v2 desktop app (Windows first, Linux deferred, ASD-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awstudio.hallucination.md` ASD-D1 to ASD-D35.
+`awstudio` is a Tauri v2 desktop app (Windows first, Linux deferred, ASD-D7) that runs and drives aws/aws-emulator and presents it with the look and behavior of the AWS Management Console, built on Cloudscape. Decisions: `awstudio.hallucination.md` ASD-D1 to ASD-D37.
 
 In scope:
 
@@ -28,10 +28,10 @@ Out of scope until after packaging: embedded mode (ASD-D5).
 
 | Item | State |
 |---|---|
-| Application code | Phase 0 scaffold, Phase 1 runtime providers (Docker, native WSL, attach), Phase 2 session loading, shared SDK clients with the endpoint guard and generated bindings, and Phase 3 capability matrix, console shell, Console Home, Emulator page, Unified Settings, page patterns and per-service support landing pages are committed (Phase 3 complete); Phase 4 console pages and Region-scoped commands for S3, DynamoDB, SQS and SNS are committed (Phase 4 complete); Phase 5 console pages and commands for IAM and Lambda are committed (Phase 5 complete); the other five services still show their support landing page |
+| Application code | Phase 0 scaffold, Phase 1 runtime providers (Docker, native WSL, attach), Phase 2 session loading, shared SDK clients with the endpoint guard and generated bindings, and Phase 3 capability matrix, console shell, Console Home, Emulator page, Unified Settings, page patterns and per-service support landing pages are committed (Phase 3 complete); Phase 4 console pages and Region-scoped commands for S3, DynamoDB, SQS and SNS are committed (Phase 4 complete); Phase 5 console pages and commands for IAM and Lambda are committed (Phase 5 complete); Phase 6 console pages and commands for Secrets Manager, SSM, KMS, CloudWatch Logs and EventBridge are committed and await approval, so all 11 services have pages |
 | Branch | `main` |
 | Committed | `.gitmodules`, `vendor/aws-emulator`, `vendor/cloudscape-demos`, this pack |
-| Windows CI | verified for Phase 0 (run 43653923870 on `9163495`) and Phase 1 (run 43658052256 on `3283b1a`); Phase 2 to Phase 5 code not run in CI, push not authorized |
+| Windows CI | verified for Phase 0 (run 43653923870 on `9163495`) and Phase 1 (run 43658052256 on `3283b1a`); Phase 2 to Phase 6 code not run in CI, push not authorized |
 
 ## Vendor pins
 
@@ -62,6 +62,11 @@ Out of scope until after packaging: embedded mode (ASD-D5).
 - Lambda `CreateFunction` answers `State` `Pending` and `UpdateFunctionCode` answers `LastUpdateStatus` `InProgress`; invoking or updating meanwhile gets HTTP 409 (ASD-D33). `ListFunctions` carries no `State`.
 - Lambda `GetFunction` hands out `Code.Location` as a presigned URL on the emulator's own endpoint (`https://127.0.0.1:<port>/awslambda-<region>-tasks/...`), valid 600 seconds; a download needs no signature (measured in Phase 5).
 - IAM returns policy documents as plain JSON, not URL-encoded as AWS does; the backend decodes either form. A new emulator already holds one user, `emulator`, created on 1970-01-01. IAM data is global to the session Region and the emulator does not evaluate it when it authorizes requests (measured in Phase 5).
+- Secrets Manager state is partitioned by Region: a secret created in `us-east-1` is not listed in `eu-west-1` (measured in Phase 6); the other four Phase 6 services were not checked.
+- EventBridge delivers a matching event to an SQS target only when the queue policy grants `events.amazonaws.com` `SQS:SendMessage`; PutTargets and PutEvents succeed without it and the queue stays empty (measured in Phase 6, ASD-D36).
+- Each archive creates a managed rule `Events-Archive-<name>` that ListRules returns with `ManagedBy` `events.amazonaws.com` (measured in Phase 6).
+- CreateActivation refuses an IAM role that does not exist or does not trust `ssm.amazonaws.com`; CreatePatchBaseline refuses a baseline with neither approved patches nor approval rules (ASD-D37); RotateSecret and PutSubscriptionFilter refuse a Lambda function that is missing or lacks the service's permission; AWS-owned Automation documents such as `AWS-RestartEC2Instance` do not exist (measured in Phase 6).
+- Logs Insights returned correct rows from `StartQuery` and `GetQueryResults` in one probe although both are partly supported; `kms:ListAliases` and `eventbridge:PutTargets` also worked when called (measured in Phase 6, ASD-Q15 to ASD-Q17).
 - The generated `config` is written from where the emulator runs, so in a container or WSL its `ca_bundle` is that side's path and its `endpoint_url` can name that side's bind address; clients take the endpoint and CA path from the Windows side and only the region from the file (file contents under Docker not inspected).
 - State is in memory only; stopping the emulator deletes all emulated resources. A container over its memory limit exits 137 and loses state.
 - Lambda runs Node.js and Python handlers inside the emulator process; upstream says function code "isn't isolated from your machine".

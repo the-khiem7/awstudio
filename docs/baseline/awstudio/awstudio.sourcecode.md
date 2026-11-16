@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-16"
-code_ref: "251af0c"
+code_ref: "0b4888b"
 ---
 
 # awstudio - source code
@@ -122,6 +122,36 @@ Routes:
 |---|---|
 | IAM | `/iam/dashboard`, `/iam/{users,groups,roles,policies}`, `/iam/{users,groups,roles,policies}/create`, `/iam/users/<name>?tab=`, `/iam/groups/<name>?tab=`, `/iam/roles/<name>?tab=`, `/iam/policies/<arn>?tab=` (the ARN is URL-encoded) |
 | Lambda | `/lambda/dashboard`, `/lambda/functions`, `/lambda/functions/create`, `/lambda/functions/<name>?tab=code\|test\|configuration\|aliases\|versions` |
+
+## Implemented in Phase 6
+
+Committed in `2f349df` (commands), `a1b3fcb` (pages) and `0b4888b` (README); verification is in the Phase 6 checkpoint of `awstudio.roadmap.md`.
+
+| Path | Role |
+|---|---|
+| `src-tauri/src/aws.rs` | `Clients::secretsmanager_in`, `ssm_in`, `kms_in`, `logs_in`, `eventbridge_in` (a client per Region, guard attached) |
+| `src-tauri/src/services/secretsmanager.rs` | 15 commands; `SmSecretValue` and `SmCreateInput` have no Debug; `sm_delete_secret` sends only the force flag when it is set |
+| `src-tauri/src/services/kms.rs` | 21 commands; `kms_list_keys` describes every key; aliases need the `alias/` prefix; `KmsKey` carries no rotation state |
+| `src-tauri/src/services/logs.rs` | 23 commands; `logs_get_events` and `logs_filter_events` return one page with the next token; group ARNs lose the trailing `:*`; times in are epoch milliseconds, query times are epoch seconds |
+| `src-tauri/src/services/eventbridge.rs` | 18 commands; an empty bus means the default bus; `events_delete_rule` removes the targets first; a failed entry in PutTargets or RemoveTargets is an error |
+| `src-tauri/src/services/ssm.rs` | 39 commands; secret-bearing types have no Debug; `ssm_describe_automation_executions` also calls GetAutomationExecution for one id and ignores its failure; `ssm_create_patch_baseline` takes approved patches (ASD-D37) |
+| `src/services/secretsmanager/SecretsManagerPages.tsx` | `secretsManagerPage(path, query)`: list, wizard, details; the value is fetched on click only |
+| `src/services/kms/KmsPages.tsx` | `kmsPage(path, query)`: key lists, wizard, details; alias reads wait for the ListAliases gate |
+| `src/services/logs/LogsPages.tsx` | `logsPage(path, query)`: log groups, details, events, Insights; names travel in query parameters |
+| `src/services/eventbridge/EventBridgePages.tsx` | `eventBridgePage(path, query)`: rules, wizard, details, buses, archives, Send events; `grantQueues` adds the queue policy statement before PutTargets (ASD-D36) |
+| `src/services/ssm/shell.tsx`, `SsmPages.tsx` | Navigation, help and page frame shared by the Systems Manager modules; `ssmRoutes` tries `ParameterStore`, `OpsCenter`, `SsmSettings` and `SsmAreas` in turn |
+| `src/services/ssm/ParameterStore.tsx`, `OpsCenter.tsx`, `SsmSettings.tsx` | Parameter Store (partly supported list), OpsCenter, Parameter Store service settings |
+| `src/services/ssm/SsmAreas.tsx` | One generic list for every other area; create forms sit outside any UI-only scope |
+
+Routes:
+
+| Service | Routes |
+|---|---|
+| Secrets Manager | `/secretsmanager/listsecrets`, `/secretsmanager/newsecret`, `/secretsmanager/secret?name=&tab=overview\|rotation\|versions\|permissions\|tags` |
+| KMS | `/kms/keys`, `/kms/aws-managed-keys`, `/kms/keys/create`, `/kms/keys/<id>?tab=` |
+| CloudWatch Logs | `/cloudwatch/logs`, `/cloudwatch/logs/create-group`, `/cloudwatch/logs/group?name=&tab=streams\|metric-filters\|subscription-filters\|tags`, `/cloudwatch/logs/events?group=&stream=`, `/cloudwatch/logs/insights` |
+| EventBridge | `/events/rules?bus=`, `/events/rules/create`, `/events/rule?bus=&name=&tab=targets\|pattern\|tags`, `/events/buses`, `/events/buses/create`, `/events/archives`, `/events/archives/create`, `/events/send-events` |
+| Systems Manager | `/systems-manager/{parameters,opsitems,automation,maintenance-windows,fleet-manager,compliance,inventory,activations,session-manager,run-command,state-manager,patch-manager,documents,resource-data-sync,settings}`, plus `parameters/create`, `parameters/detail?name=`, `opsitems/create`, `opsitems/detail?id=`, `automation/execute`, `automation/detail?id=`, `activations/create`, `run-command/run`, `state-manager/create`, `patch-manager/create-baseline`, `documents/create`, `documents/detail?name=`, `resource-data-sync/create` |
 
 ## Planned architecture
 
