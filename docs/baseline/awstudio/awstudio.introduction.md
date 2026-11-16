@@ -31,7 +31,7 @@ Out of scope until after packaging: embedded mode (ASD-D5).
 | Application code | Phase 0 scaffold, Phase 1 runtime providers (Docker, native WSL, attach), Phase 2 session loading, shared SDK clients with the endpoint guard and generated bindings, and Phase 3 capability matrix, console shell, Console Home, Emulator page, Unified Settings, page patterns and per-service support landing pages are committed (Phase 3 complete); Phase 4 console pages and Region-scoped commands for S3, DynamoDB, SQS and SNS are committed (Phase 4 complete); Phase 5 console pages and commands for IAM and Lambda are committed (Phase 5 complete); Phase 6 console pages and commands for Secrets Manager, SSM, KMS, CloudWatch Logs and EventBridge are committed (Phase 6 complete), so all 11 services have pages |
 | Branch | `main` |
 | Committed | `.gitmodules`, `vendor/aws-emulator`, `vendor/cloudscape-demos`, this pack |
-| Windows CI | verified for Phase 0 (run 43653923870 on `9163495`) and Phase 1 (run 43658052256 on `3283b1a`); Phase 2 to Phase 6 code not run in CI, push not authorized |
+| Windows CI | verified for Phase 0 (run 43653923870 on `9163495`), Phase 1 (run 43658052256 on `3283b1a`) and Phase 2 to Phase 6 code (run 43798204146 on `c63286e`, job `windows`, 10m40s, pushed with the owner's approval on 2026-11-16) |
 
 ## Vendor pins
 
