@@ -1,0 +1,1 @@
+{"n":"AWS Marketplace Reporting Service","cli":"marketplace-reporting","ops":{"GetBuyerDashboard":{"c":"get-buyer-dashboard","i":"GetBuyerDashboardInput"}},"shapes":{"GetBuyerDashboardInput":{"t":"s","m":{"dashboardIdentifier":["@str",1],"embeddingDomains":["EmbeddingDomains",1]}},"EmbeddingDomains":{"t":"l","i":"@str"}}}

@@ -1,0 +1,1 @@
+{"n":"Amazon Connect Contact Lens","cli":"connect-contact-lens","ops":{"ListRealtimeContactAnalysisSegments":{"c":"list-realtime-contact-analysis-segments","i":"ListRealtimeContactAnalysisSegmentsRequest"}},"shapes":{"ListRealtimeContactAnalysisSegmentsRequest":{"t":"s","m":{"InstanceId":["@str",1],"ContactId":["@str",1],"MaxResults":["@int"],"NextToken":["@str"]}}}}

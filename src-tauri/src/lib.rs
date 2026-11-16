@@ -5,7 +5,7 @@ pub mod provider;
 pub mod services;
 pub mod session;
 
-use services::{dynamodb, eventbridge, iam, kms, lambda, logs, s3, secretsmanager, sns, sqs, ssm};
+use services::{apiconsole, dynamodb, eventbridge, iam, kms, lambda, logs, s3, secretsmanager, sns, sqs, ssm};
 use tauri_specta::{collect_commands, Builder};
 
 /// Command registry shared by the app and the bindings export, so the generated TypeScript always
@@ -274,6 +274,12 @@ pub fn bindings() -> Builder<tauri::Wry> {
         ssm::ssm_delete_association,
         ssm::ssm_describe_instance_information,
         ssm::ssm_get_inventory,
+        apiconsole::api_run,
+        apiconsole::api_cli_info,
+        apiconsole::seed_list,
+        apiconsole::seed_load,
+        apiconsole::seed_save,
+        apiconsole::seed_delete,
     ])
 }
 

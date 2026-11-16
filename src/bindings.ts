@@ -417,6 +417,17 @@ export const commands = {
 	ssmDeleteAssociation: (region: string, associationId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("ssm_delete_association", { region, associationId }, options),
 	ssmDescribeInstanceInformation: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmManagedInstance_Serialize[]>("ssm_describe_instance_information", { region }, options),
 	ssmGetInventory: (region: string, options?: InvokeOptions) => __TAURI_INVOKE<SsmInventoryEntity_Serialize[]>("ssm_get_inventory", { region }, options),
+	/**
+	 *  Runs `aws <service> <operation>` against the emulator and returns what the CLI printed. A
+	 *  non-zero exit code is a result, not an error: the page shows the CLI's own message.
+	 */
+	apiRun: (region: string, service: string, operation: string, input: string | null, streaming: boolean, options?: InvokeOptions) => __TAURI_INVOKE<CliResponse_Serialize>("api_run", { region, service, operation, input, streaming }, options),
+	/**  Version line of the AWS CLI on PATH, so the page can say which CLI it will use. */
+	apiCliInfo: (options?: InvokeOptions) => __TAURI_INVOKE<CliInfo>("api_cli_info", undefined, options),
+	seedList: (options?: InvokeOptions) => __TAURI_INVOKE<SeedSummary[]>("seed_list", undefined, options),
+	seedLoad: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<SeedScript_Serialize>("seed_load", { name }, options),
+	seedSave: (script: SeedScript_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<null>("seed_save", { script }, options),
+	seedDelete: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("seed_delete", { name }, options),
 };
 
 /* Types */
@@ -497,6 +508,40 @@ export type BucketEncryption_Serialize = {
 	algorithm: string,
 	kms_key_id: string | null,
 	bucket_key: boolean,
+};
+
+/**  Which AWS CLI the console will run. */
+export type CliInfo = {
+	version: string,
+};
+
+/**  Everything one CLI call produced. */
+export type CliResponse = CliResponse_Serialize | CliResponse_Deserialize;
+
+/**  Everything one CLI call produced. */
+export type CliResponse_Deserialize = {
+	exit_code: number,
+	stdout: string,
+	stderr: string,
+	/**  The command line without the temporary file paths, for display and for copying. */
+	command: string,
+	millis: number,
+	/**  Size of a streaming body the CLI wrote to a temporary file, which is discarded. */
+	streamed_bytes?: number | null,
+	truncated: boolean,
+};
+
+/**  Everything one CLI call produced. */
+export type CliResponse_Serialize = {
+	exit_code: number,
+	stdout: string,
+	stderr: string,
+	/**  The command line without the temporary file paths, for display and for copying. */
+	command: string,
+	millis: number,
+	/**  Size of a streaming body the CLI wrote to a temporary file, which is discarded. */
+	streamed_bytes: number | null,
+	truncated: boolean,
 };
 
 /**  One file of a deployment package as the Code tab shows it. */
@@ -1870,6 +1915,62 @@ export type S3Version_Serialize = {
 	delete_marker: boolean,
 	size: number | null,
 	last_modified: string | null,
+};
+
+export type SeedScript = SeedScript_Serialize | SeedScript_Deserialize;
+
+export type SeedScript_Deserialize = {
+	name: string,
+	steps: SeedStep_Deserialize[],
+};
+
+export type SeedScript_Serialize = {
+	name: string,
+	steps: SeedStep_Serialize[],
+};
+
+/**  One saved call of a seed script. */
+export type SeedStep = SeedStep_Serialize | SeedStep_Deserialize;
+
+/**  One saved call of a seed script. */
+export type SeedStep_Deserialize = {
+	/**  Capability key of the service, for example `cloudwatch-logs`. */
+	service_key: string,
+	/**  CLI service name, for example `logs`. */
+	service: string,
+	/**  Operation name as the model spells it, for example `CreateLogGroup`. */
+	operation: string,
+	/**  CLI operation name, for example `create-log-group`. */
+	command: string,
+	region: string,
+	/**  The input as JSON text; absent for an operation without input. */
+	input?: string | null,
+	streaming: boolean,
+	/**  A short label the owner may set. */
+	note: string,
+};
+
+/**  One saved call of a seed script. */
+export type SeedStep_Serialize = {
+	/**  Capability key of the service, for example `cloudwatch-logs`. */
+	service_key: string,
+	/**  CLI service name, for example `logs`. */
+	service: string,
+	/**  Operation name as the model spells it, for example `CreateLogGroup`. */
+	operation: string,
+	/**  CLI operation name, for example `create-log-group`. */
+	command: string,
+	region: string,
+	/**  The input as JSON text; absent for an operation without input. */
+	input: string | null,
+	streaming: boolean,
+	/**  A short label the owner may set. */
+	note: string,
+};
+
+export type SeedSummary = {
+	name: string,
+	steps: number,
 };
 
 export type SendMessageInput = SendMessageInput_Serialize | SendMessageInput_Deserialize;

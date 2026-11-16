@@ -109,6 +109,18 @@ impl Runtime {
         Ok(c)
     }
 
+    /// Folder of `settings.json`, which also holds the seed scripts.
+    pub(crate) fn dir(&self) -> &std::path::Path {
+        &self.dir
+    }
+
+    /// The emulator environment variables of the current run, for the API Console's CLI calls.
+    pub(crate) fn env_vars(&mut self) -> Result<Vec<(&'static str, String)>, ApiError> {
+        let endpoint = self.provider()?.endpoint();
+        let clients = self.clients()?;
+        Ok(env::variables(&endpoint, clients.session()))
+    }
+
     /// Loads the session of a run that just started, so the first SDK call needs no file read.
     /// A failure is left for that call to report.
     fn refresh_session(&mut self) {

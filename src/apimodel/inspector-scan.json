@@ -1,0 +1,1 @@
+{"n":"Inspector Scan","cli":"inspector-scan","ops":{"ScanSbom":{"c":"scan-sbom","i":"ScanSbomRequest"}},"shapes":{"ScanSbomRequest":{"t":"s","m":{"sbom":["@doc",1],"outputFormat":["OutputFormat"]}},"OutputFormat":{"t":"e","v":["CYCLONE_DX_1_5","INSPECTOR","INSPECTOR_ALT"],"n":false}}}

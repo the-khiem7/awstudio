@@ -1,0 +1,1 @@
+{"n":"IAM Toolbox (Preview)","cli":"iam-toolbox","ops":{"GetRequestAuthorizationDetails":{"c":"get-request-authorization-details","i":"GetRequestAuthorizationDetailsInput"}},"shapes":{"GetRequestAuthorizationDetailsInput":{"t":"s","m":{"authorizationId":["@str",1],"nextToken":["@str"]}}}}

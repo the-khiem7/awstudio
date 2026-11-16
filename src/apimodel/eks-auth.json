@@ -1,0 +1,1 @@
+{"n":"Amazon EKS Auth","cli":"eks-auth","ops":{"AssumeRoleForPodIdentity":{"c":"assume-role-for-pod-identity","i":"AssumeRoleForPodIdentityRequest"}},"shapes":{"AssumeRoleForPodIdentityRequest":{"t":"s","m":{"clusterName":["@str",1],"token":["@str",1],"eksNodeName":["@str"],"instanceId":["@str"],"zone":["@str"]}}}}

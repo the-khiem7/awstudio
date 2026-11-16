@@ -2,6 +2,7 @@
 //! console's region selector, because the emulator keeps a separate state per Region, and reports
 //! its failures as [`ApiError`] with the operation named `service:Operation`.
 
+pub mod apiconsole;
 pub mod dynamodb;
 pub mod eventbridge;
 pub mod iam;
