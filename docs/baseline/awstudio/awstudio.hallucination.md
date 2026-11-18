@@ -3,8 +3,8 @@ baseline_schema: "3.0"
 pack: "awstudio"
 document: "hallucination"
 status: "active"
-updated: "2026-11-16"
-code_ref: "0b9e6f4"
+updated: "2026-11-18"
+code_ref: "b8c40c7"
 ---
 
 # awstudio - decisions and open questions
@@ -54,6 +54,7 @@ Vendor-dependent entries carry a `**Vendor:**` line naming the vendor submodule 
 | ASD-D37 | Lesson: CreatePatchBaseline needs approved patches or approval rules | lesson | ASD-D9 |
 | ASD-D38 | PutTargets, ListAliases, StartQuery and GetQueryResults are enabled although partly supported | closed | ASD-D9, ASD-D35, ASD-D36, ASD-Q15, ASD-Q16, ASD-Q17 |
 | ASD-D39 | ListQueues stays disabled outside the SQS pages | closed | ASD-D9, ASD-D32, ASD-D35, ASD-Q18 |
+| ASD-D40 | Lesson: a busy status poll read as a stop and a start looped the version check | lesson | ASD-D14 |
 | ASD-Q7 | Native provider install source: no DEB package URL known | open, deferred | ASD-D4, ASD-D7 |
 
 ## Closed decisions
@@ -444,6 +445,13 @@ Closes ASD-Q18.
 - Why: the plain listing worked on the SQS page, but its failing steps (body shape, pagination) were not probed outside that page [agent]; owner accepted the recommendation [user].
 - What breaks if ignored: enabling it everywhere lets a partly supported read run on any page without a probe of how it fails there.
 - Rejected: enable ListQueues so the target form can offer a queue picker - the failing steps are unprobed outside the SQS page [user].
+
+### ASD-D40: Lesson: a busy status poll read as a stop and a start looped the version check
+
+- Believed: the `busy` flag of `provider_status` means a start, stop, restart or build is running, so the page can take its stopped placeholder as the real state (Phase 1 status polling, Phase 3 `RuntimeStatusProvider`).
+- Why it looked reasonable: the comment on the command says only a start, stop or build holds the lock for long, and Phases 1 to 6 ran against Docker with no sign of trouble.
+- What disproved it: `provider_status` answers `Stopped`, `busy: true`, no endpoint whenever `try_lock` fails, and every backend command takes that lock, `provider_version_check` (an `aws-emulator -v` exec of about 0.3 s through the WSL shim) included. Each poll that met the lock read as a stop, the next as a start, the run id changed both times, and a new run id triggers the next version check. The engine logged that exec about every 4 seconds with nothing touching the app; the nav button alternated between running and working, and Run on the API Console was disabled with "the emulator is not running" on most polls.
+- Fix: `RuntimeStatusProvider` keeps the last status that was not busy and, while a poll says busy, stores it with `busy: true`; after the change no version check ran in 25 seconds. A real start or stop still changes the run id when the lock is released and through `markLifecycle`. [agent]
 
 ## Open questions
 

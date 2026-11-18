@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "sourcecode"
 status: "draft"
 updated: "2026-11-18"
-code_ref: "cc4f55b"
+code_ref: "b8c40c7"
 ---
 
 # awstudio - source code
@@ -68,7 +68,7 @@ Committed in `11a6413` to `52fe16d`, navigation guard in `8ce1a04`; verification
 | `tools/capability-gen/capability_gen.py` | Reads models, `@op` headers, scaffold markers, `not_implemented` messages and the tag's `scores.json.gz` (cached in `.cache/`); writes `capability.json` one operation per line |
 | `src/capability/capability.json` | Generated, committed; loaded as a separate chunk |
 | `src/capability/index.tsx` | `CapabilityProvider` (run-scoped 501 cache), `useCapability("svc:Op", variant?)`, `judge`, `variantUnsupported`, `reportUnsupported`, `tierCounts` |
-| `src/runtime/RuntimeStatus.tsx` | App-wide status poll (2 s), `runId`, `markLifecycle`, version check once per run |
+| `src/runtime/RuntimeStatus.tsx` | App-wide status poll (2 s), `runId`, `markLifecycle`, version check once per run; a busy poll keeps the last settled status |
 | `src/shell/` | `TopNav`, `ConsolePage` (AppLayoutToolbar per route, help, split panel slot), hash `router` (with `setNavigationGuard`, one capture `hashchange` listener registered at module load that holds a navigation for a dirty form, ASD-D25), `services` (11 services, console paths), `regions`, `preferences` (unified settings in localStorage), `notifications`, `GlobalNotices` (telemetry, version mismatch), `storage` |
 | `src/patterns/` | `gating` (`UiOnlyScope`, `GatedButton`, `UnsupportedBanner`), `ResourceTable`, `DetailsPage`, `CreateForm`, `CreateWizard`, `unsaved`, `DeleteModal`, `ManageTags`, `S3Picker`, `ServiceDashboard`, `ComparisonSplitPanel`, `table-common` (date filter form) |
 | `src/pages/` | `ConsoleHome` (board), `EmulatorPage`, `SettingsPage`, `ServiceLanding` (support table per service), `PatternGallery` (dev builds only) |
@@ -153,9 +153,9 @@ Routes:
 | EventBridge | `/events/rules?bus=`, `/events/rules/create`, `/events/rule?bus=&name=&tab=targets\|pattern\|tags`, `/events/buses`, `/events/buses/create`, `/events/archives`, `/events/archives/create`, `/events/send-events` |
 | Systems Manager | `/systems-manager/{parameters,opsitems,automation,maintenance-windows,fleet-manager,compliance,inventory,activations,session-manager,run-command,state-manager,patch-manager,documents,resource-data-sync,settings}`, plus `parameters/create`, `parameters/detail?name=`, `opsitems/create`, `opsitems/detail?id=`, `automation/execute`, `automation/detail?id=`, `activations/create`, `run-command/run`, `state-manager/create`, `patch-manager/create-baseline`, `documents/create`, `documents/detail?name=`, `resource-data-sync/create` |
 
-## Implemented in Phase 7 (in progress)
+## Implemented in Phase 7
 
-Generator, backend and the three pages; the live acceptance is open. Verification is in the Phase 7 checkpoint of `awstudio.roadmap.md`.
+Generator, backend and the three pages. Verification is in the Phase 7 checkpoint of `awstudio.roadmap.md`.
 
 | Path | Role |
 |---|---|

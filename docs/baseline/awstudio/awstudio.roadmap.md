@@ -4,7 +4,7 @@ pack: "awstudio"
 document: "roadmap"
 status: "active"
 updated: "2026-11-18"
-code_ref: "cc4f55b"
+code_ref: "b8c40c7"
 ---
 
 # awstudio - roadmap
@@ -20,7 +20,7 @@ code_ref: "cc4f55b"
 | Phase 4 | Services wave 1: S3, DynamoDB, SQS, SNS | complete | Phase 3 |
 | Phase 5 | Services wave 2: IAM, Lambda | complete | Phase 4 |
 | Phase 6 | Services wave 3: Secrets Manager, SSM, KMS, CloudWatch Logs, EventBridge | complete | Phase 5 |
-| Phase 7 | API Console, fidelity catalog, seed scripts | in progress | Phase 3 |
+| Phase 7 | API Console, fidelity catalog, seed scripts | complete | Phase 3 |
 | Phase 8 | Packaging | planned | Phase 6, Phase 7 |
 | Phase 9 | Embedded mode spike | deferred | Phase 8 |
 
@@ -256,21 +256,23 @@ Tasks:
 
 Acceptance: an operation of a service outside the 11 runs from the API Console and shows its response.
 
-Checkpoint (generator, backend and the three pages implemented, committed in `0b9e6f4` and `cc4f55b`; the acceptance is not met because no operation has run against a live emulator):
+Checkpoint (generator and backend committed in `0b9e6f4`, the three pages in `cc4f55b`, a status polling fix in `b8c40c7`; acceptance verified live on 2026-11-18; the owner has not yet approved closing the phase):
 
 | Task | State |
 |---|---|
 | 1 API Console: trimmed bundle | done: `tools/apimodel-gen/apimodel_gen.py` writes `src/apimodel/<service key>.json` for 436 services, 19451 operations, 8.01 MB (the originals are 118 MB); 18956 operations carry a CLI name the installed AWS CLI v2 accepts, 11 services have none (for example `cloudwatch-events`) |
-| 1 API Console: execution | backend done: `api_run` runs `aws <service> <operation> --cli-input-json` with an argument array, the emulator environment and the cleared real-credential variables, `--endpoint-url` pinned, 90 s timeout, 4 MiB output cap; `api_cli_info` returns the CLI version; not run against a live emulator yet |
-| 1 API Console: page and form | done: `#/api-console` with service and operation pickers (operations tagged with their tier), a form generated from the bundle plus a JSON tab, Run, response and command panes, Add to seed script; Run is gated by the capability matrix like the service pages; verified against a mocked IPC only |
+| 1 API Console: execution | done: `api_run` runs `aws <service> <operation> --cli-input-json` with an argument array, the emulator environment and the cleared real-credential variables, `--endpoint-url` pinned, 90 s timeout, 4 MiB output cap; run against the Docker emulator through the app |
+| 1 API Console: page and form | done: `#/api-console` with service and operation pickers (operations tagged with their tier), a form generated from the bundle plus a JSON tab, Run, response and command panes, Add to seed script; Run is gated by the capability matrix like the service pages; verified live, see the evidence below |
 | 2 Fidelity catalog | done: `#/fidelity` lists the 436 services with tier counts and open vendor issues, `#/fidelity/<service key>` lists operations and issue links at the pinned commit; verified against the committed data |
-| 3 Seed scripts | done: `#/seeds` lists and deletes scripts, `#/seeds/<name>` edits notes and order and replays with per-step status, stopping at the first failure; replay verified against a mocked IPC only |
+| 3 Seed scripts | done: `#/seeds` lists and deletes scripts, `#/seeds/<name>` edits notes and order and replays with per-step status, stopping at the first failure; replay verified live, see the evidence below |
 
 - Evidence: `cargo test --lib` 69 passed (7 new); `cargo test --test bindings` regenerated `src/bindings.ts` once, then passed; `npx tsc --noEmit` passed. The generator ran twice with the same 436 service keys as `capability.json`.
 - Evidence for the pages: `npm run build` passed; a scripted headless Edge check on the Vite dev server with a mocked Tauri IPC passed 13 of 13 assertions (GetCallerIdentity runs through `api_run` with `sts get-caller-identity`, Add to seed script saves a step, AssumeRole shows its required members and a disabled Run, the fidelity list shows 436 services and 9888 of 19451 operations supported, the sqs details list operations and issues, a two-step seed script replays in `us-east-1` then `eu-west-1`).
-- Not verified: the acceptance (an operation of a service outside the 11 run from the API Console against a live emulator); `api_run` and the seed commands through the app, and the AWS CLI call itself; `cargo test --lib` and `cargo test --test bindings` after the pages (cargo, Docker and WSL are not installed on the machine that wrote the pages); forms of deeply nested or union inputs; streaming responses; a replay that fails part way; the release build window; Windows CI of the Phase 7 code.
+- Live acceptance (dev app over WebView2 remote debugging on Windows with a Docker engine behind the WSL shim, emulator 1.0.382 started from the app, AWS CLI 2.40.3, 9 of 9 assertions): `sts GetCallerIdentity` run from the API Console returned account `000000000000` and the `emulator` user ARN; `kinesis CreateStream` (outside the 11 services) filled in the form (StreamName, ShardCount) succeeded and `kinesis ListStreams` listed the stream; Add to seed script saved the call; after a confirmed emulator restart `ListStreams` no longer listed the stream (state is in memory); replaying the seed script rebuilt it with the progress bar at 1 of 1 steps; `ec2 DescribeRegions` (yellow) kept Run disabled. The same CreateStream run twice failed with `ResourceInUseException` shown in the error output, and a replay of two such steps stopped at the failing one.
+- Rust: `cargo test --lib` 69 passed and `cargo test --test bindings` passed on this machine (MSVC toolchain, portable build tools).
+- Not verified: the release build window; Windows CI of the Phase 7 code (push not authorized); forms of union inputs and of structures nested deeper than 3 levels; a streaming response; the native and attach providers with the new pages.
 - Issue matching is heuristic: an issue belongs to a service by its `Issue-Shape-Id`, by the services named in its `Issue-Key`, or by the first word of its file name; a word shared by several services names none of them (`lambda`, `events` and `logs` map to the console services). Per service the file keeps the 100 most severe.
-- Next: on a machine with Docker, start the emulator from the Emulator page, run one operation of a service outside the 11 from `#/api-console` (for example `sts get-caller-identity` or an EC2 `describe-regions` if green), record the response, add it to a seed script and replay it after a restart; then run `cargo test --lib` and `cargo test --test bindings`, and Windows CI.
+- Defect found and fixed in this phase: the status poll read a command holding the backend lock as a stop and a start, which looped the version check and disabled Run (cause and fix in ASD-D40, `src/runtime/RuntimeStatus.tsx`).
 - Changed files: `tools/apimodel-gen/apimodel_gen.py`, `src/apimodel/`, `src/capability/issues.json`, `src-tauri/src/services/apiconsole.rs`, `src-tauri/src/services/mod.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/commands.rs` (`dir`, `env_vars`), `src/bindings.ts`; pages: `src/apiconsole/` (`model.ts`, `ShapeForm.tsx`, `seeds.ts`), `src/pages/ApiConsolePage.tsx`, `src/pages/FidelityPage.tsx`, `src/pages/SeedScriptsPage.tsx`, `src/App.tsx`, `src/shell/TopNav.tsx`.
 - Risk: the bundle needs the installed AWS CLI at generation time and on the user's machine at run time (ASD-D8); a streaming request body (`s3api put-object --body`) has no form field; a streaming response is written to a temporary file and discarded.
 ## Phase 8: Packaging
@@ -304,4 +306,4 @@ Deferred by ASD-D5. Scope: link `aws-emulator-embedded` into the backend as a pr
 
 ## Next action
 
-Phase 7 is in progress: the generator, backend and the three pages are committed (`cc4f55b`), and the acceptance is open until an operation of a service outside the 11 runs from the API Console against a live emulator (see the Phase 7 checkpoint). Run it on a machine with Docker, record the response, then run the Rust tests and Windows CI. ASD-Q7 (native provider install source) stays open and deferred. The Docker emulator is stopped. Windows CI of the Phase 2 to Phase 6 code passed on `c63286e`.
+Phase 7 is complete in code and verified live; it waits for the owner's approval to close, and Windows CI of the Phase 7 code needs a push the owner has not authorized. Next phase: Phase 8, packaging (per-user NSIS installer, updater, About page with licenses). ASD-Q7 (native provider install source) stays open and deferred. The Docker emulator is stopped. Windows CI of the Phase 2 to Phase 6 code passed on `c63286e`.
