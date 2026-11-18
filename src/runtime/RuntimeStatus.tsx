@@ -30,10 +30,17 @@ export function RuntimeStatusProvider({ children }: { children: ReactNode }) {
   const [versionCheck, setVersionCheck] = useState<VersionCheck | null>(null);
   const last = useRef<{ running: boolean; url: string | null }>({ running: false, url: null });
   const checkedRun = useRef<number | null>(null);
+  const settledStatus = useRef<Status | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const next = await api.status();
+      const polled = await api.status();
+      // The backend answers `busy` with a stopped placeholder whenever any command holds its lock,
+      // a 0.3 s version check included. Keep the last settled state under the busy flag, or every
+      // check would read as a stop and a start, change the run and trigger the next check.
+      const settled = settledStatus.current;
+      const next = polled.busy && settled ? { ...settled, busy: true } : polled;
+      if (!polled.busy) settledStatus.current = polled;
       setStatus(next);
       setError(null);
       const running = next.state === "running";
