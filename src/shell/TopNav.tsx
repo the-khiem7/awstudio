@@ -74,6 +74,14 @@ export function TopNav() {
 
   const servicesMenu: ButtonDropdownProps.ItemOrGroup[] = [
     { id: "home", text: "Console Home", href: href("/") },
+    {
+      text: "Emulator tools",
+      items: [
+        { id: "api-console", text: "API Console", secondaryText: "Run any operation of any modeled service", href: href("/api-console") },
+        { id: "fidelity", text: "Fidelity catalog", secondaryText: "Support level of every modeled service", href: href("/fidelity") },
+        { id: "seeds", text: "Seed scripts", secondaryText: "Rebuild state after a restart", href: href("/seeds") },
+      ],
+    },
     ...CATEGORIES.map((category) => ({
       text: category,
       items: SERVICES.filter((s) => s.category === category).map((s) => ({

@@ -6,8 +6,11 @@ import Link from "@cloudscape-design/components/link";
 import SpaceBetween from "@cloudscape-design/components/space-between";
 import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { CapabilityProvider } from "./capability";
+import { ApiConsolePage } from "./pages/ApiConsolePage";
 import { ConsoleHome } from "./pages/ConsoleHome";
 import { EmulatorPage } from "./pages/EmulatorPage";
+import { FidelityPage } from "./pages/FidelityPage";
+import { SeedScriptsPage } from "./pages/SeedScriptsPage";
 import { ServiceLanding } from "./pages/ServiceLanding";
 import { SettingsPage } from "./pages/SettingsPage";
 import { RuntimeStatusProvider } from "./runtime/RuntimeStatus";
@@ -54,6 +57,9 @@ function Routes() {
   if (path === "/") page = <ConsoleHome />;
   else if (path === "/emulator") page = <EmulatorPage />;
   else if (path === "/settings") page = <SettingsPage />;
+  else if (path === "/api-console") page = <ApiConsolePage />;
+  else if (path === "/fidelity" || path.startsWith("/fidelity/")) page = <FidelityPage />;
+  else if (path === "/seeds" || path.startsWith("/seeds/")) page = <SeedScriptsPage />;
   else if (service && hasServicePages(service.id)) page = servicePage(service.id, path, query) ?? <NotFound path={path} />;
   else if (service) page = <ServiceLanding key={service.id} service={service} />;
   else if (PatternGallery && (gallery || path === "/dev/patterns"))
