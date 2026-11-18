@@ -3,8 +3,8 @@ baseline_schema: "3.0"
 pack: "awstudio"
 document: "sourcecode"
 status: "draft"
-updated: "2026-11-16"
-code_ref: "0b9e6f4"
+updated: "2026-11-18"
+code_ref: "cc4f55b"
 ---
 
 # awstudio - source code
@@ -155,7 +155,7 @@ Routes:
 
 ## Implemented in Phase 7 (in progress)
 
-Generator and backend only; the pages are not written. Verification is in the Phase 7 checkpoint of `awstudio.roadmap.md`.
+Generator, backend and the three pages; the live acceptance is open. Verification is in the Phase 7 checkpoint of `awstudio.roadmap.md`.
 
 | Path | Role |
 |---|---|
@@ -164,6 +164,12 @@ Generator and backend only; the pages are not written. Verification is in the Ph
 | `src/capability/issues.json` | Per service key: open vendor issue count and up to 100 items `[file, severity, title]`, most severe first |
 | `src-tauri/src/services/apiconsole.rs` | `api_run`, `api_cli_info`, `seed_list`, `seed_load`, `seed_save`, `seed_delete`; names validated before the CLI is spawned |
 | `src-tauri/src/commands.rs` | `Runtime::dir` and `Runtime::env_vars` for the API Console |
+| `src/apiconsole/model.ts` | Bundle types; `loadServiceModel` loads one `src/apimodel/<service key>.json` on demand; `prune`, `inputText`, `missingRequired` build and check the CLI input |
+| `src/apiconsole/ShapeForm.tsx` | `ShapeField` and `InputForm`: a Cloudscape form from a bundle shape; documents and structures nested deeper than 3 levels are JSON text |
+| `src/apiconsole/seeds.ts` | `addSeedStep` appends a call to a seed script, creating it when absent |
+| `src/pages/ApiConsolePage.tsx` | Route `#/api-console` (`?service=<key>&op=<Operation>` preselects): pickers, Form and JSON tabs, Run through `api_run`, response, Add to seed script; gated by `judge()` |
+| `src/pages/FidelityPage.tsx` | Routes `#/fidelity` and `#/fidelity/<service key>`: tiers of all 436 services, operations, open vendor issues with links at the pinned commit |
+| `src/pages/SeedScriptsPage.tsx` | Routes `#/seeds` and `#/seeds/<name>`: list, delete, edit notes and order, replay in order with per-step status |
 ## Planned architecture
 
 ```mermaid
